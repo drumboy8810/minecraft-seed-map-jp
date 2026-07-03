@@ -128,7 +128,8 @@ h2 {
 .memo-panel,
 .map-panel,
 .converter-panel,
-.detail-panel {
+.detail-panel,
+.status-panel {
   padding: 18px;
 }
 
@@ -597,6 +598,64 @@ h2 {
   color: var(--muted);
 }
 
+.status-note {
+  margin: 0;
+  color: var(--warning);
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.status-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.status-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid #3d4938;
+  border-radius: 6px;
+  background: var(--surface-2);
+}
+
+.status-item span {
+  color: #e4eedc;
+  font-weight: 800;
+}
+
+.status-badge {
+  flex: 0 0 auto;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  line-height: 1;
+}
+
+.status-badge.done {
+  background: rgba(139, 224, 113, 0.18);
+  color: var(--accent-strong);
+}
+
+.status-badge.candidate {
+  background: rgba(227, 189, 100, 0.18);
+  color: var(--warning);
+}
+
+.status-badge.preparing {
+  background: rgba(88, 199, 230, 0.16);
+  color: #8edff2;
+}
+
+.status-badge.unsupported {
+  background: rgba(185, 199, 176, 0.12);
+  color: var(--muted);
+}
+
 .site-footer {
   padding: 22px 0 34px;
 }
@@ -635,7 +694,8 @@ h2 {
   .memo-panel,
   .map-panel,
   .converter-panel,
-  .detail-panel {
+  .detail-panel,
+  .status-panel {
     padding: 14px;
   }
 
@@ -664,6 +724,10 @@ h2 {
   }
 
   .memo-card {
+    grid-template-columns: 1fr;
+  }
+
+  .status-grid {
     grid-template-columns: 1fr;
   }
 }

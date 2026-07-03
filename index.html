@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="Minecraftのシード値からチャンク、スライムチャンク、手動登録した構造物マーカーを確認できる日本語の静的Seed Mapです。">
-    <title>Minecraft Seed Map JP v2.6</title>
+    <title>Minecraft Seed Map JP v2.7</title>
     <link rel="icon" href="assets/icons/favicon.svg" type="image/svg+xml">
     <link rel="stylesheet" href="css/style.css">
   </head>
@@ -12,7 +12,7 @@
     <header class="site-header">
       <div>
         <p class="eyebrow">外部通信なし / GitHub Pages対応</p>
-        <h1>Minecraft Seed Map JP v2.6</h1>
+        <h1>Minecraft Seed Map JP v2.7</h1>
         <p class="lead">シード値と座標からチャンクを確認し、スライムチャンク表示、provider方式の簡易地形色分け、手動構造物マーカー、Java版の村・海底神殿・廃ポータル候補を扱える日本語Seed Mapです。</p>
       </div>
       <div class="privacy-badge" aria-label="プライバシー方針">
@@ -153,6 +153,31 @@
             <button id="use-point-button" class="secondary-button full-width" type="button" disabled>この座標を地点登録に使う</button>
           </div>
         </aside>
+      </section>
+
+      <section class="panel status-panel" aria-labelledby="status-title">
+        <div class="panel-heading split-heading">
+          <div>
+            <h2 id="status-title">対応状況</h2>
+            <p>現在使える機能、候補表示、準備中の機能を確認できます。</p>
+          </div>
+          <p class="status-note">候補表示は、実際の生成位置と異なる場合があります。</p>
+        </div>
+
+        <div class="status-grid" aria-label="機能ごとの対応状況">
+          <div class="status-item"><span>スライムチャンク</span><strong class="status-badge done">対応済み</strong></div>
+          <div class="status-item"><span>廃ポータル候補</span><strong class="status-badge candidate">候補表示</strong></div>
+          <div class="status-item"><span>村候補</span><strong class="status-badge candidate">候補表示</strong></div>
+          <div class="status-item"><span>海底神殿候補</span><strong class="status-badge candidate">候補表示</strong></div>
+          <div class="status-item"><span>簡易地形</span><strong class="status-badge done">対応済み</strong></div>
+          <div class="status-item"><span>詳細バイオーム</span><strong class="status-badge preparing">準備中</strong></div>
+          <div class="status-item"><span>要塞</span><strong class="status-badge unsupported">未対応</strong></div>
+          <div class="status-item"><span>森の洋館</span><strong class="status-badge unsupported">未対応</strong></div>
+          <div class="status-item"><span>古代都市</span><strong class="status-badge unsupported">未対応</strong></div>
+          <div class="status-item"><span>トライアルチャンバー</span><strong class="status-badge unsupported">未対応</strong></div>
+          <div class="status-item"><span>ネザー要塞</span><strong class="status-badge unsupported">未対応</strong></div>
+          <div class="status-item"><span>エンドシティ</span><strong class="status-badge unsupported">未対応</strong></div>
+        </div>
       </section>
 
       <section class="panel converter-panel" aria-labelledby="converter-title">

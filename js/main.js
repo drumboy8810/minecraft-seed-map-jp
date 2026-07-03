@@ -222,10 +222,12 @@ elements.memoFilterGroup.addEventListener("change", (event) => {
 });
 
 elements.structureLayerToggle.addEventListener("change", () => {
+  updateStructureLayerToggleLabel();
   applyMemoMarkers();
 });
 
 renderCategoryFilters();
+updateStructureLayerToggleLabel();
 renderMemos();
 
 function moveMapTo(x, z, successMessage) {
@@ -485,6 +487,14 @@ function getVisibleStructureRecords() {
     activeCategories: getActiveCategories(),
     showLayer: elements.structureLayerToggle.checked,
   });
+}
+
+function updateStructureLayerToggleLabel() {
+  const label = elements.structureLayerToggle.closest(".layer-toggle")?.querySelector("span");
+  if (!label) {
+    return;
+  }
+  label.textContent = elements.structureLayerToggle.checked ? "構造物レイヤー: ON" : "構造物レイヤー: OFF";
 }
 
 function setCategoryFiltersChecked(checked) {

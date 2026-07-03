@@ -3,8 +3,8 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="Minecraft Java版のシード値からスライムチャンクを確認し、探索用の座標を扱える日本語の静的ツールです。">
-    <title>Minecraft Seed Map JP v2.0</title>
+    <meta name="description" content="Minecraftのシード値からチャンク、スライムチャンク、手動登録した構造物マーカーを確認できる日本語の静的Seed Mapです。">
+    <title>Minecraft Seed Map JP v2.0.1</title>
     <link rel="icon" href="assets/icons/favicon.svg" type="image/svg+xml">
     <link rel="stylesheet" href="css/style.css">
   </head>
@@ -12,8 +12,8 @@
     <header class="site-header">
       <div>
         <p class="eyebrow">外部通信なし / GitHub Pages対応</p>
-        <h1>Minecraft Seed Map JP v2.0</h1>
-        <p class="lead">シード値と座標から、Java版と実験的な統合版のスライムチャンクを日本語UIで確認できます。</p>
+        <h1>Minecraft Seed Map JP v2.0.1</h1>
+        <p class="lead">シード値と座標からチャンクを確認し、スライムチャンク表示と手動登録した構造物マーカーを扱える日本語Seed Mapです。</p>
       </div>
       <div class="privacy-badge" aria-label="プライバシー方針">
         入力内容は外部送信されません
@@ -85,8 +85,8 @@
         <section class="panel map-panel" aria-labelledby="map-title">
           <div class="panel-heading map-heading">
             <div>
-              <h2 id="map-title">スライムチャンクマップ</h2>
-              <p id="map-summary">条件を入力してマップを生成してください。</p>
+              <h2 id="map-title">チャンク・構造物マップ</h2>
+              <p id="map-summary">条件を入力してマップを生成してください。スライムチャンク表示はマップ機能の1つです。</p>
               <p id="center-status" class="center-status">中心チャンク: - / 中心ブロック: -</p>
             </div>
             <div class="legend" aria-label="凡例">
@@ -100,11 +100,12 @@
 
           <label class="layer-toggle">
             <input id="structure-layer-toggle" type="checkbox" checked>
-            <span>構造物レイヤーを表示</span>
+            <span>構造物レイヤー: ON</span>
           </label>
+          <p class="layer-note">手動登録した地点・構造物はこのレイヤーに表示されます。Seedからの構造物自動検出はまだ未対応です。</p>
 
           <div class="map-scroll" aria-label="チャンクグリッドの横スクロール領域">
-            <div id="chunk-grid" class="chunk-grid" role="grid" aria-label="スライムチャンクのグリッド"></div>
+            <div id="chunk-grid" class="chunk-grid" role="grid" aria-label="チャンクと構造物レイヤーのグリッド"></div>
           </div>
         </section>
 

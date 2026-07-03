@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Minecraft Seed Map JP">
+  <rect width="64" height="64" rx="8" fill="#151915"/>
+  <rect x="8" y="8" width="16" height="16" fill="#7bdc68"/>
+  <rect x="24" y="8" width="16" height="16" fill="#394136"/>
+  <rect x="40" y="8" width="16" height="16" fill="#7bdc68"/>
+  <rect x="8" y="24" width="16" height="16" fill="#394136"/>
+  <rect x="24" y="24" width="16" height="16" fill="#e2c468"/>
+  <rect x="40" y="24" width="16" height="16" fill="#394136"/>
+  <rect x="8" y="40" width="16" height="16" fill="#7bdc68"/>
+  <rect x="24" y="40" width="16" height="16" fill="#394136"/>
+  <rect x="40" y="40" width="16" height="16" fill="#7bdc68"/>
+</svg>

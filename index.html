@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Minecraft Java版のシード値からスライムチャンクを確認できる日本語の静的ツールです。">
+    <title>Minecraft Seed Map JP v1.0</title>
+    <link rel="icon" href="assets/icons/favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="css/style.css">
+  </head>
+  <body>
+    <header class="site-header">
+      <div>
+        <p class="eyebrow">外部通信なし / GitHub Pages対応</p>
+        <h1>Minecraft Seed Map JP v1.0</h1>
+        <p class="lead">シード値と座標から、Java版のスライムチャンクを日本語UIで確認できます。</p>
+      </div>
+      <div class="privacy-badge" aria-label="プライバシー方針">
+        入力内容は外部送信されません
+      </div>
+    </header>
+
+    <main class="app-shell">
+      <section class="panel control-panel" aria-labelledby="controls-title">
+        <div class="panel-heading">
+          <h2 id="controls-title">条件入力</h2>
+          <p>シード値、中心座標、表示範囲を指定してください。</p>
+        </div>
+
+        <form id="map-form" class="form-grid" novalidate>
+          <label class="field span-2">
+            <span>シード値</span>
+            <input id="seed-input" name="seed" type="text" autocomplete="off" placeholder="例: 12345 または survival-world">
+          </label>
+
+          <label class="field">
+            <span>エディション</span>
+            <select id="edition-select" name="edition">
+              <option value="java">Java版</option>
+              <option value="bedrock">統合版（実験的）</option>
+            </select>
+          </label>
+
+          <label class="field">
+            <span>バージョン</span>
+            <select id="version-select" name="version">
+              <option value="java-1.20">Java 1.20+</option>
+              <option value="java-1.19">Java 1.19</option>
+              <option value="java-1.18">Java 1.18</option>
+              <option value="bedrock-latest">統合版 最新</option>
+            </select>
+          </label>
+
+          <label class="field">
+            <span>中心 X</span>
+            <input id="center-x-input" name="centerX" type="number" inputmode="numeric" value="0" step="1">
+          </label>
+
+          <label class="field">
+            <span>中心 Z</span>
+            <input id="center-z-input" name="centerZ" type="number" inputmode="numeric" value="0" step="1">
+          </label>
+
+          <label class="field">
+            <span>表示範囲</span>
+            <select id="radius-select" name="radius">
+              <option value="16">16チャンク</option>
+              <option value="32" selected>32チャンク</option>
+              <option value="64">64チャンク</option>
+            </select>
+          </label>
+
+          <div class="action-row span-2">
+            <button class="primary-button" type="submit">マップを生成</button>
+            <button class="secondary-button" id="reset-button" type="button">初期値に戻す</button>
+          </div>
+        </form>
+
+        <div id="message" class="message" role="status" aria-live="polite"></div>
+      </section>
+
+      <section class="map-layout">
+        <section class="panel map-panel" aria-labelledby="map-title">
+          <div class="panel-heading map-heading">
+            <div>
+              <h2 id="map-title">スライムチャンクマップ</h2>
+              <p id="map-summary">条件を入力してマップを生成してください。</p>
+            </div>
+            <div class="legend" aria-label="凡例">
+              <span><i class="legend-chip slime"></i>スライム</span>
+              <span><i class="legend-chip normal"></i>通常</span>
+              <span><i class="legend-chip center"></i>中心付近</span>
+            </div>
+          </div>
+
+          <div class="map-scroll" aria-label="チャンクグリッドの横スクロール領域">
+            <div id="chunk-grid" class="chunk-grid" role="grid" aria-label="スライムチャンクのグリッド"></div>
+          </div>
+        </section>
+
+        <aside class="panel detail-panel" aria-labelledby="detail-title">
+          <div class="panel-heading">
+            <h2 id="detail-title">選択チャンク</h2>
+            <p>チャンクをクリックすると詳細が表示されます。</p>
+          </div>
+          <dl id="chunk-details" class="detail-list">
+            <div>
+              <dt>チャンク座標</dt>
+              <dd>-</dd>
+            </div>
+            <div>
+              <dt>ブロック範囲</dt>
+              <dd>-</dd>
+            </div>
+            <div>
+              <dt>判定</dt>
+              <dd>-</dd>
+            </div>
+          </dl>
+          <button id="copy-button" class="secondary-button full-width" type="button" disabled>座標をコピー</button>
+        </aside>
+      </section>
+
+      <section class="panel memo-panel" aria-labelledby="memo-title">
+        <div class="panel-heading split-heading">
+          <div>
+            <h2 id="memo-title">探索メモ</h2>
+            <p>見つけた場所をブラウザ内だけに保存できます。</p>
+          </div>
+          <button id="clear-memos-button" class="danger-button" type="button">全削除</button>
+        </div>
+
+        <form id="memo-form" class="memo-form" novalidate>
+          <label class="field">
+            <span>タイトル</span>
+            <input id="memo-title-input" type="text" maxlength="60" placeholder="例: 拠点候補">
+          </label>
+          <label class="field">
+            <span>X座標</span>
+            <input id="memo-x-input" type="number" inputmode="numeric" step="1" placeholder="0">
+          </label>
+          <label class="field">
+            <span>Z座標</span>
+            <input id="memo-z-input" type="number" inputmode="numeric" step="1" placeholder="0">
+          </label>
+          <label class="field">
+            <span>種別</span>
+            <select id="memo-type-input">
+              <option value="拠点">拠点</option>
+              <option value="村">村</option>
+              <option value="ネザーゲート">ネザーゲート</option>
+              <option value="洞窟">洞窟</option>
+              <option value="スライムトラップ予定地">スライムトラップ予定地</option>
+              <option value="その他">その他</option>
+            </select>
+          </label>
+          <label class="field span-2">
+            <span>メモ本文</span>
+            <textarea id="memo-body-input" rows="3" maxlength="400" placeholder="補足を書いてください"></textarea>
+          </label>
+          <button class="primary-button" type="submit">メモを追加</button>
+        </form>
+
+        <div id="memo-list" class="memo-list" aria-live="polite"></div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <p>このツールは非公式のMinecraft補助ツールです。MinecraftおよびMojang Studiosとは関係ありません。</p>
+      <p>外部API、アクセス解析、自動アップロードは使用していません。</p>
+    </footer>
+
+    <script type="module" src="js/main.js"></script>
+  </body>
+</html>

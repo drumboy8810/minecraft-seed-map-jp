@@ -307,7 +307,7 @@ h2 {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  margin: 0 0 12px;
+  margin: 0 14px 12px 0;
   color: var(--muted);
   font-size: 0.9rem;
   font-weight: 800;
@@ -321,6 +321,29 @@ h2 {
   margin: -4px 0 12px;
   color: var(--muted);
   font-size: 0.88rem;
+}
+
+.terrain-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 12px;
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+
+.terrain-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.terrain-legend i {
+  width: 13px;
+  height: 13px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 3px;
+  background: var(--terrain-color);
 }
 
 .map-scroll {
@@ -347,6 +370,12 @@ h2 {
   background: var(--normal-chunk);
 }
 
+.chunk-cell.has-terrain {
+  background:
+    linear-gradient(0deg, rgba(13, 18, 13, 0.28), rgba(13, 18, 13, 0.28)),
+    var(--terrain-color, var(--normal-chunk));
+}
+
 .chunk-cell:hover,
 .chunk-cell:focus-visible {
   outline: 2px solid #eef5e8;
@@ -355,6 +384,12 @@ h2 {
 
 .chunk-cell.is-slime {
   background: linear-gradient(135deg, var(--slime-chunk), #3aa54b);
+}
+
+.chunk-cell.has-terrain.is-slime {
+  background:
+    linear-gradient(135deg, rgba(123, 220, 104, 0.84), rgba(58, 165, 75, 0.84)),
+    var(--terrain-color, var(--normal-chunk));
 }
 
 .chunk-cell.is-center {

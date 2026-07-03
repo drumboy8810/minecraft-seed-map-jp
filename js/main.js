@@ -3,6 +3,7 @@ import { addMemo, clearMemos, deleteMemo, loadMemos } from "./storage.js";
 import { STRUCTURE_TYPES } from "./structures/config.js";
 import { detectStructures } from "./structures/detector.js";
 import { applyStructureLayer, getSourceLabel, getVisibleStructures } from "./structures/layer.js";
+import { getTerrainForChunk } from "./terrain.js";
 import {
   blockToChunk,
   convertNetherToOverworld,
@@ -61,6 +62,7 @@ const elements = {
   grid: document.querySelector("#chunk-grid"),
   summary: document.querySelector("#map-summary"),
   centerStatus: document.querySelector("#center-status"),
+  terrainLayerToggle: document.querySelector("#terrain-layer-toggle"),
   structureLayerToggle: document.querySelector("#structure-layer-toggle"),
   details: document.querySelector("#chunk-details"),
   copyChunk: document.querySelector("#copy-chunk-button"),
@@ -91,6 +93,7 @@ let latestCenterCopyText = "";
 let latestRangeCopyText = "";
 let latestCenterPoint = null;
 let latestAutoStructures = [];
+let latestWorldSeed = null;
 
 elements.form.addEventListener("submit", (event) => {
   event.preventDefault();
@@ -114,6 +117,7 @@ elements.reset.addEventListener("click", () => {
   elements.radius.value = "32";
   clearSelectedChunk();
   elements.grid.innerHTML = "";
+  latestWorldSeed = null;
   elements.summary.textContent = "条件を入力してマップを生成してください。";
   updateCenterStatus(null);
   setMessage("初期値に戻しました。", "success");
@@ -227,7 +231,13 @@ elements.structureLayerToggle.addEventListener("change", () => {
   applyMemoMarkers();
 });
 
+elements.terrainLayerToggle.addEventListener("change", () => {
+  updateTerrainLayerToggleLabel();
+  applyTerrainLayer();
+});
+
 renderCategoryFilters();
+updateTerrainLayerToggleLabel();
 updateStructureLayerToggleLabel();
 renderMemos();
 
@@ -258,6 +268,7 @@ function generateMap(successMessage = "マップを生成しました。チャ�
   }
 
   const worldSeed = seedToJavaLong(seedText);
+  latestWorldSeed = worldSeed;
   latestAutoStructures = detectStructures({
     seed: worldSeed,
     edition,
@@ -300,6 +311,7 @@ function generateMap(successMessage = "マップを生成しました。チャ�
   }
 
   elements.grid.appendChild(fragment);
+  applyTerrainLayer();
   applyMemoMarkers();
   const editionLabel = edition === "bedrock" ? "統合版（実験的）" : "Java版";
   const editionNote = edition === "bedrock" ? ` ${BEDROCK_EXPERIMENTAL_MESSAGE}` : "";
@@ -431,6 +443,27 @@ function updateCenterStatus(center) {
   elements.centerStatus.textContent = `中心チャンク: X=${center.centerChunkX}, Z=${center.centerChunkZ} / 中心ブロック: X=${center.centerX}, Z=${center.centerZ}`;
 }
 
+function applyTerrainLayer() {
+  const cells = Array.from(elements.grid.querySelectorAll(".chunk-cell"));
+  if (!cells.length || latestWorldSeed === null) {
+    return;
+  }
+
+  for (const cell of cells) {
+    if (!elements.terrainLayerToggle.checked) {
+      cell.classList.remove("has-terrain");
+      cell.style.removeProperty("--terrain-color");
+      cell.dataset.terrain = "";
+      continue;
+    }
+
+    const terrain = getTerrainForChunk(latestWorldSeed, Number(cell.dataset.x), Number(cell.dataset.z));
+    cell.classList.add("has-terrain");
+    cell.style.setProperty("--terrain-color", terrain.color);
+    cell.dataset.terrain = terrain.label;
+  }
+}
+
 function applyMemoMarkers() {
   applyStructureLayer({
     grid: elements.grid,
@@ -506,6 +539,14 @@ function updateStructureLayerToggleLabel() {
     return;
   }
   label.textContent = elements.structureLayerToggle.checked ? "構造物レイヤー: ON" : "構造物レイヤー: OFF";
+}
+
+function updateTerrainLayerToggleLabel() {
+  const label = elements.terrainLayerToggle.closest(".layer-toggle")?.querySelector("span");
+  if (!label) {
+    return;
+  }
+  label.textContent = elements.terrainLayerToggle.checked ? "地形色分けレイヤー: ON" : "地形色分けレイヤー: OFF";
 }
 
 function setCategoryFiltersChecked(checked) {

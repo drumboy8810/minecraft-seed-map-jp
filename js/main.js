@@ -2,6 +2,8 @@ import { seedToJavaLong, isSlimeChunk } from "./slime.js";
 import { addMemo, clearMemos, deleteMemo, loadMemos } from "./storage.js";
 import { blockToChunk, copyText, formatChunkDetails, toInteger } from "./utils.js";
 
+const BEDROCK_UNSUPPORTED_MESSAGE = "統合版のスライムチャンク判定はv1.0では未対応です。Java版を選択してください。";
+
 const elements = {
   form: document.querySelector("#map-form"),
   seed: document.querySelector("#seed-input"),
@@ -114,6 +116,14 @@ function generateMap() {
   const radius = toInteger(elements.radius.value);
   const edition = elements.edition.value;
 
+  if (edition !== "java") {
+    clearSelectedChunk();
+    elements.grid.innerHTML = "";
+    elements.summary.textContent = BEDROCK_UNSUPPORTED_MESSAGE;
+    setMessage(BEDROCK_UNSUPPORTED_MESSAGE, "error");
+    return;
+  }
+
   if (!seedText) {
     setMessage("シード値を入力してください。", "error");
     return;
@@ -160,8 +170,7 @@ function generateMap() {
   }
 
   elements.grid.appendChild(fragment);
-  const editionNote = edition === "java" ? "" : " 統合版はv1.0では実験的表示のため、スライム判定は行いません。";
-  elements.summary.textContent = `中心チャンク X=${centerChunkX}, Z=${centerChunkZ} / ${diameter}×${diameter} / スライム ${slimeCount}件。${editionNote}`;
+  elements.summary.textContent = `中心チャンク X=${centerChunkX}, Z=${centerChunkZ} / ${diameter}×${diameter} / スライム ${slimeCount}件。`;
   setMessage("マップを生成しました。チャンクを選択すると詳細を確認できます。", "success");
 }
 

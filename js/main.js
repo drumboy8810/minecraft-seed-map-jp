@@ -1,5 +1,7 @@
 import { seedToJavaLong, isSlimeChunk } from "./slime.js";
 import { addMemo, clearMemos, deleteMemo, loadMemos } from "./storage.js";
+import { detectStructures } from "./structures/detector.js";
+import { applyStructureLayer, getSourceLabel, getVisibleStructures } from "./structures/layer.js";
 import {
   blockToChunk,
   convertNetherToOverworld,
@@ -58,6 +60,7 @@ const elements = {
   grid: document.querySelector("#chunk-grid"),
   summary: document.querySelector("#map-summary"),
   centerStatus: document.querySelector("#center-status"),
+  structureLayerToggle: document.querySelector("#structure-layer-toggle"),
   details: document.querySelector("#chunk-details"),
   copyChunk: document.querySelector("#copy-chunk-button"),
   copyCenter: document.querySelector("#copy-center-button"),
@@ -86,6 +89,7 @@ let latestChunkCopyText = "";
 let latestCenterCopyText = "";
 let latestRangeCopyText = "";
 let latestCenterPoint = null;
+let latestAutoStructures = [];
 
 elements.form.addEventListener("submit", (event) => {
   event.preventDefault();
@@ -217,6 +221,10 @@ elements.memoFilterGroup.addEventListener("change", (event) => {
   applyMemoMarkers();
 });
 
+elements.structureLayerToggle.addEventListener("change", () => {
+  applyMemoMarkers();
+});
+
 renderCategoryFilters();
 renderMemos();
 
@@ -247,6 +255,14 @@ function generateMap(successMessage = "マップを生成しました。チャ�
   }
 
   const worldSeed = seedToJavaLong(seedText);
+  latestAutoStructures = detectStructures({
+    seed: worldSeed,
+    edition,
+    version: elements.version.value,
+    centerX,
+    centerZ,
+    radius,
+  });
   const centerChunkX = blockToChunk(centerX);
   const centerChunkZ = blockToChunk(centerZ);
   const diameter = radius * 2 + 1;
@@ -382,7 +398,7 @@ function renderMemos() {
   elements.memoList.innerHTML = memos.map((memo) => `
     <article class="memo-card" style="--marker-color: ${getCategoryColor(memo.type)}">
       <div>
-        <h3>${escapeHtml(memo.title)}</h3>
+        <h3>${escapeHtml(memo.name || memo.title)}</h3>
         <div class="memo-meta">
           <span class="category-pill">${escapeHtml(normalizeCategory(memo.type))}</span>
           <span>X=${memo.x}, Z=${memo.z}</span>
@@ -407,36 +423,10 @@ function updateCenterStatus(center) {
 }
 
 function applyMemoMarkers() {
-  const cells = Array.from(elements.grid.querySelectorAll(".chunk-cell"));
-  if (!cells.length) {
-    return;
-  }
-
-  const markersByChunk = new Map();
-  for (const memo of getFilteredMemos()) {
-    const chunkX = blockToChunk(memo.x);
-    const chunkZ = blockToChunk(memo.z);
-    const key = `${chunkX},${chunkZ}`;
-    const markers = markersByChunk.get(key) || [];
-    markers.push(memo);
-    markersByChunk.set(key, markers);
-  }
-
-  for (const cell of cells) {
-    const key = `${cell.dataset.x},${cell.dataset.z}`;
-    const markers = markersByChunk.get(key) || [];
-    cell.classList.toggle("has-marker", markers.length > 0);
-    cell.dataset.markerIds = markers.map((marker) => marker.id).join(",");
-    if (markers.length) {
-      cell.style.setProperty("--marker-color", getCategoryColor(markers[0].type));
-      cell.setAttribute("aria-label", `${cell.dataset.baseLabel}、地点メモ ${markers.length}件`);
-      cell.title = markers.map((marker) => `${marker.title} (${normalizeCategory(marker.type)})`).join("\n");
-    } else {
-      cell.style.removeProperty("--marker-color");
-      cell.setAttribute("aria-label", cell.dataset.baseLabel);
-      cell.removeAttribute("title");
-    }
-  }
+  applyStructureLayer({
+    grid: elements.grid,
+    structures: getVisibleStructureRecords(),
+  });
 }
 
 function getMarkerDetails(button) {
@@ -445,15 +435,15 @@ function getMarkerDetails(button) {
     return "";
   }
 
-  const memosById = new Map(getFilteredMemos().map((memo) => [memo.id, memo]));
+  const memosById = new Map(getVisibleStructureRecords().map((memo) => [memo.id, memo]));
   const markerItems = markerIds
     .map((id) => memosById.get(id))
     .filter(Boolean)
     .map((memo) => `
       <article class="marker-detail">
-        <h3>${escapeHtml(memo.title)}</h3>
-        <p>${escapeHtml(normalizeCategory(memo.type))} / X=${memo.x}, Z=${memo.z}</p>
-        <p>${escapeHtml(memo.body || "メモ本文なし")}</p>
+        <h3>${escapeHtml(memo.name || memo.title)}</h3>
+        <p>${escapeHtml(normalizeCategory(memo.type))} / ${escapeHtml(getSourceLabel(memo.source))} / X=${memo.x}, Z=${memo.z}</p>
+        <p>${escapeHtml(memo.note || memo.body || "メモ本文なし")}</p>
       </article>
     `)
     .join("");
@@ -486,6 +476,15 @@ function getActiveCategories() {
     .map((input) => input.value)
     .filter((value) => value !== "all");
   return new Set(checked);
+}
+
+function getVisibleStructureRecords() {
+  return getVisibleStructures({
+    manualStructures: getFilteredMemos(),
+    autoStructures: latestAutoStructures,
+    activeCategories: getActiveCategories(),
+    showLayer: elements.structureLayerToggle.checked,
+  });
 }
 
 function setCategoryFiltersChecked(checked) {

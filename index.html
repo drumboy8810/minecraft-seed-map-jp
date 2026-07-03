@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="Minecraft Java版のシード値からスライムチャンクを確認し、探索用の座標を扱える日本語の静的ツールです。">
-    <title>Minecraft Seed Map JP v1.5</title>
+    <title>Minecraft Seed Map JP v2.0</title>
     <link rel="icon" href="assets/icons/favicon.svg" type="image/svg+xml">
     <link rel="stylesheet" href="css/style.css">
   </head>
@@ -12,7 +12,7 @@
     <header class="site-header">
       <div>
         <p class="eyebrow">外部通信なし / GitHub Pages対応</p>
-        <h1>Minecraft Seed Map JP v1.5</h1>
+        <h1>Minecraft Seed Map JP v2.0</h1>
         <p class="lead">シード値と座標から、Java版と実験的な統合版のスライムチャンクを日本語UIで確認できます。</p>
       </div>
       <div class="privacy-badge" aria-label="プライバシー方針">
@@ -93,8 +93,15 @@
               <span><i class="legend-chip slime"></i>スライム</span>
               <span><i class="legend-chip normal"></i>通常</span>
               <span><i class="legend-chip center"></i>中心付近</span>
+              <span><i class="legend-chip structure"></i>構造物</span>
+              <span><i class="legend-chip auto-structure"></i>自動候補</span>
             </div>
           </div>
+
+          <label class="layer-toggle">
+            <input id="structure-layer-toggle" type="checkbox" checked>
+            <span>構造物レイヤーを表示</span>
+          </label>
 
           <div class="map-scroll" aria-label="チャンクグリッドの横スクロール領域">
             <div id="chunk-grid" class="chunk-grid" role="grid" aria-label="スライムチャンクのグリッド"></div>

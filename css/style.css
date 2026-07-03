@@ -351,7 +351,7 @@ h2 {
   height: 7px;
   border: 1px solid rgba(13, 24, 12, 0.86);
   border-radius: 50%;
-  background: var(--warning);
+  background: var(--marker-color, var(--warning));
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.22);
 }
 
@@ -407,6 +407,38 @@ h2 {
   margin-top: 16px;
 }
 
+.memo-tools {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.filter-group {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.filter-group label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 6px 10px;
+  border: 1px solid #56634f;
+  border-radius: 6px;
+  background: var(--surface-3);
+  color: var(--muted);
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.filter-group input {
+  accent-color: var(--accent-strong);
+}
+
 .memo-card {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -415,6 +447,10 @@ h2 {
   border: 1px solid #3d4938;
   border-radius: 8px;
   background: var(--surface-2);
+}
+
+.memo-card {
+  border-left: 5px solid var(--marker-color, var(--warning));
 }
 
 .memo-actions {
@@ -435,6 +471,21 @@ h2 {
   margin-bottom: 8px;
   color: var(--muted);
   font-size: 0.86rem;
+}
+
+.category-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #eef5e8;
+}
+
+.category-pill::before {
+  content: "";
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--marker-color, var(--warning));
 }
 
 .memo-body {
@@ -511,6 +562,10 @@ h2 {
   .form-grid,
   .memo-form,
   .converter-form {
+    grid-template-columns: 1fr;
+  }
+
+  .memo-tools {
     grid-template-columns: 1fr;
   }
 

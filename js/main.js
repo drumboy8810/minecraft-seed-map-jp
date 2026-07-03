@@ -9,7 +9,39 @@ import {
   toInteger,
 } from "./utils.js";
 
-const BEDROCK_EXPERIMENTAL_MESSAGE = "統合版のスライムチャンク判定はv1.4では実験的対応です。結果は今後検証が必要です。";
+const BEDROCK_EXPERIMENTAL_MESSAGE = "統合版のスライムチャンク判定はv1.5では実験的対応です。結果は今後検証が必要です。";
+const STRUCTURE_CATEGORIES = [
+  "村",
+  "要塞",
+  "廃ポータル",
+  "海底神殿",
+  "森の洋館",
+  "ピリジャー前哨基地",
+  "古代都市",
+  "エンドポータル",
+  "ネザー要塞",
+  "砦の遺跡",
+  "エンドシティ",
+  "トライアルチャンバー",
+  "スポナー",
+  "その他",
+];
+const CATEGORY_COLORS = {
+  "村": "#8be071",
+  "要塞": "#e3bd64",
+  "廃ポータル": "#b27cff",
+  "海底神殿": "#58c7e6",
+  "森の洋館": "#5fb36d",
+  "ピリジャー前哨基地": "#ee796f",
+  "古代都市": "#6f8cff",
+  "エンドポータル": "#d58cff",
+  "ネザー要塞": "#e35454",
+  "砦の遺跡": "#d88a45",
+  "エンドシティ": "#d6d0ff",
+  "トライアルチャンバー": "#78d0b3",
+  "スポナー": "#f0d66b",
+  "その他": "#b9c7b0",
+};
 
 const elements = {
   form: document.querySelector("#map-form"),
@@ -42,6 +74,9 @@ const elements = {
   memoZ: document.querySelector("#memo-z-input"),
   memoType: document.querySelector("#memo-type-input"),
   memoBody: document.querySelector("#memo-body-input"),
+  memoSearch: document.querySelector("#memo-search-input"),
+  memoCategorySearch: document.querySelector("#memo-category-search-input"),
+  memoFilterGroup: document.querySelector("#memo-filter-group"),
   memoList: document.querySelector("#memo-list"),
   clearMemos: document.querySelector("#clear-memos-button"),
 };
@@ -157,6 +192,32 @@ elements.memoList.addEventListener("click", (event) => {
   setMessage("地点メモを削除しました。", "success");
 });
 
+elements.memoSearch.addEventListener("input", () => {
+  renderMemos();
+  applyMemoMarkers();
+});
+
+elements.memoCategorySearch.addEventListener("input", () => {
+  renderMemos();
+  applyMemoMarkers();
+});
+
+elements.memoFilterGroup.addEventListener("change", (event) => {
+  const target = event.target;
+  if (!(target instanceof HTMLInputElement)) {
+    return;
+  }
+
+  if (target.value === "all") {
+    setCategoryFiltersChecked(target.checked);
+  } else {
+    syncAllCategoryFilter();
+  }
+  renderMemos();
+  applyMemoMarkers();
+});
+
+renderCategoryFilters();
 renderMemos();
 
 function moveMapTo(x, z, successMessage) {
@@ -256,7 +317,7 @@ function selectChunk(button) {
   `;
   setCopyButtonsDisabled(false);
   if (selectedChunk.isSlime) {
-    elements.memoType.value = "トラップ予定地";
+    elements.memoType.value = "スポナー";
   }
 }
 
@@ -312,18 +373,18 @@ function setCopyButtonsDisabled(disabled) {
 }
 
 function renderMemos() {
-  const memos = loadMemos();
+  const memos = getFilteredMemos();
   if (!memos.length) {
-    elements.memoList.innerHTML = '<p class="empty-state">保存済みの地点メモはありません。</p>';
+    elements.memoList.innerHTML = '<p class="empty-state">表示できる地点メモはありません。</p>';
     return;
   }
 
   elements.memoList.innerHTML = memos.map((memo) => `
-    <article class="memo-card">
+    <article class="memo-card" style="--marker-color: ${getCategoryColor(memo.type)}">
       <div>
         <h3>${escapeHtml(memo.title)}</h3>
         <div class="memo-meta">
-          <span>${escapeHtml(memo.type)}</span>
+          <span class="category-pill">${escapeHtml(normalizeCategory(memo.type))}</span>
           <span>X=${memo.x}, Z=${memo.z}</span>
           <span>${new Date(memo.createdAt).toLocaleString("ja-JP")}</span>
         </div>
@@ -352,7 +413,7 @@ function applyMemoMarkers() {
   }
 
   const markersByChunk = new Map();
-  for (const memo of loadMemos()) {
+  for (const memo of getFilteredMemos()) {
     const chunkX = blockToChunk(memo.x);
     const chunkZ = blockToChunk(memo.z);
     const key = `${chunkX},${chunkZ}`;
@@ -367,9 +428,11 @@ function applyMemoMarkers() {
     cell.classList.toggle("has-marker", markers.length > 0);
     cell.dataset.markerIds = markers.map((marker) => marker.id).join(",");
     if (markers.length) {
+      cell.style.setProperty("--marker-color", getCategoryColor(markers[0].type));
       cell.setAttribute("aria-label", `${cell.dataset.baseLabel}、地点メモ ${markers.length}件`);
-      cell.title = markers.map((marker) => `${marker.title} (${marker.type})`).join("\n");
+      cell.title = markers.map((marker) => `${marker.title} (${normalizeCategory(marker.type)})`).join("\n");
     } else {
+      cell.style.removeProperty("--marker-color");
       cell.setAttribute("aria-label", cell.dataset.baseLabel);
       cell.removeAttribute("title");
     }
@@ -382,20 +445,68 @@ function getMarkerDetails(button) {
     return "";
   }
 
-  const memosById = new Map(loadMemos().map((memo) => [memo.id, memo]));
+  const memosById = new Map(getFilteredMemos().map((memo) => [memo.id, memo]));
   const markerItems = markerIds
     .map((id) => memosById.get(id))
     .filter(Boolean)
     .map((memo) => `
       <article class="marker-detail">
         <h3>${escapeHtml(memo.title)}</h3>
-        <p>${escapeHtml(memo.type)} / X=${memo.x}, Z=${memo.z}</p>
+        <p>${escapeHtml(normalizeCategory(memo.type))} / X=${memo.x}, Z=${memo.z}</p>
         <p>${escapeHtml(memo.body || "メモ本文なし")}</p>
       </article>
     `)
     .join("");
 
   return `<div><dt>地点メモ</dt><dd>${markerItems}</dd></div>`;
+}
+
+function renderCategoryFilters() {
+  elements.memoFilterGroup.innerHTML = [
+    '<label><input type="checkbox" value="all" checked> 全表示</label>',
+    ...STRUCTURE_CATEGORIES.map((category) => `<label><input type="checkbox" value="${escapeHtml(category)}" checked> ${escapeHtml(category)}のみ</label>`),
+  ].join("");
+}
+
+function getFilteredMemos() {
+  const titleQuery = elements.memoSearch.value.trim().toLowerCase();
+  const categoryQuery = elements.memoCategorySearch.value.trim().toLowerCase();
+  const activeCategories = getActiveCategories();
+
+  return loadMemos().filter((memo) => {
+    const category = normalizeCategory(memo.type);
+    const titleMatches = !titleQuery || String(memo.title || "").toLowerCase().includes(titleQuery);
+    const categoryMatches = !categoryQuery || category.toLowerCase().includes(categoryQuery);
+    return titleMatches && categoryMatches && activeCategories.has(category);
+  });
+}
+
+function getActiveCategories() {
+  const checked = Array.from(elements.memoFilterGroup.querySelectorAll('input[type="checkbox"]:checked'))
+    .map((input) => input.value)
+    .filter((value) => value !== "all");
+  return new Set(checked);
+}
+
+function setCategoryFiltersChecked(checked) {
+  for (const input of elements.memoFilterGroup.querySelectorAll('input[type="checkbox"]')) {
+    input.checked = checked;
+  }
+}
+
+function syncAllCategoryFilter() {
+  const filters = Array.from(elements.memoFilterGroup.querySelectorAll('input[type="checkbox"]'));
+  const all = filters.find((input) => input.value === "all");
+  const categoryFilters = filters.filter((input) => input.value !== "all");
+  all.checked = categoryFilters.every((input) => input.checked);
+}
+
+function normalizeCategory(category) {
+  return STRUCTURE_CATEGORIES.includes(category) ? category : "その他";
+}
+
+function getCategoryColor(category) {
+  return CATEGORY_COLORS[normalizeCategory(category)] || CATEGORY_COLORS["その他"];
 }
 
 function setMessage(text, type = "") {

@@ -26,6 +26,21 @@ export const STRUCTURE_CATEGORIES = [
   "その他",
 ];
 
+export const STRUCTURE_TYPES = {
+  VILLAGE: STRUCTURE_CATEGORIES[0],
+  STRONGHOLD: STRUCTURE_CATEGORIES[1],
+  RUINED_PORTAL: STRUCTURE_CATEGORIES[2],
+};
+
+export const JAVA_STRUCTURE_SETTINGS = {
+  ruinedPortal: {
+    type: STRUCTURE_TYPES.RUINED_PORTAL,
+    spacing: 40,
+    separation: 15,
+    salt: 34222645n,
+  },
+};
+
 export const CATEGORY_COLORS = {
   "村": "#8be071",
   "要塞": "#e3bd64",

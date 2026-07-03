@@ -33,6 +33,12 @@ export const STRUCTURE_TYPES = {
 };
 
 export const JAVA_STRUCTURE_SETTINGS = {
+  village: {
+    type: STRUCTURE_TYPES.VILLAGE,
+    spacing: 32,
+    separation: 8,
+    salt: 10387312n,
+  },
   ruinedPortal: {
     type: STRUCTURE_TYPES.RUINED_PORTAL,
     spacing: 40,

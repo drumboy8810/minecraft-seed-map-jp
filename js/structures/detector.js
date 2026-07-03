@@ -15,15 +15,35 @@ export function detectStructures({ seed, edition, centerX, centerZ, radius }) {
     return [];
   }
 
-  return detectRuinedPortalCandidates({ seed, centerX, centerZ, radius });
+  return [
+    ...detectStructureCandidates({
+      seed,
+      centerX,
+      centerZ,
+      radius,
+      settings: JAVA_STRUCTURE_SETTINGS.village,
+      idPrefix: "village",
+      name: "村候補",
+      note: "村は候補表示のため、実際の生成位置と異なる場合があります。",
+    }),
+    ...detectStructureCandidates({
+      seed,
+      centerX,
+      centerZ,
+      radius,
+      settings: JAVA_STRUCTURE_SETTINGS.ruinedPortal,
+      idPrefix: "ruined-portal",
+      name: "廃ポータル候補",
+      note: "候補表示のため、実際の生成位置と異なる場合があります。",
+    }),
+  ];
 }
 
 export function isStructureAutoDetectionAvailable() {
   return true;
 }
 
-function detectRuinedPortalCandidates({ seed, centerX, centerZ, radius }) {
-  const settings = JAVA_STRUCTURE_SETTINGS.ruinedPortal;
+function detectStructureCandidates({ seed, centerX, centerZ, radius, settings, idPrefix, name, note }) {
   const centerChunkX = blockToChunk(centerX);
   const centerChunkZ = blockToChunk(centerZ);
   const minChunkX = centerChunkX - radius;
@@ -38,7 +58,7 @@ function detectRuinedPortalCandidates({ seed, centerX, centerZ, radius }) {
 
   for (let regionZ = minRegionZ; regionZ <= maxRegionZ; regionZ += 1) {
     for (let regionX = minRegionX; regionX <= maxRegionX; regionX += 1) {
-      const candidate = getRuinedPortalCandidate(seed, regionX, regionZ, settings);
+      const candidate = getRegionStructureCandidate(seed, regionX, regionZ, settings);
       if (
         candidate.chunkX < minChunkX ||
         candidate.chunkX > maxChunkX ||
@@ -49,14 +69,14 @@ function detectRuinedPortalCandidates({ seed, centerX, centerZ, radius }) {
       }
 
       candidates.push(createStructureRecord({
-        id: `auto:ruined-portal:${regionX}:${regionZ}`,
-        name: "廃ポータル候補",
+        id: `auto:${idPrefix}:${regionX}:${regionZ}`,
+        name,
         type: settings.type,
         x: candidate.x,
         z: candidate.z,
         dimension: STRUCTURE_DIMENSIONS.OVERWORLD,
         source: STRUCTURE_SOURCES.AUTO,
-        note: "候補表示のため、実際の生成位置と異なる場合があります。",
+        note,
       }));
     }
   }
@@ -64,7 +84,7 @@ function detectRuinedPortalCandidates({ seed, centerX, centerZ, radius }) {
   return candidates;
 }
 
-function getRuinedPortalCandidate(seed, regionX, regionZ, settings) {
+function getRegionStructureCandidate(seed, regionX, regionZ, settings) {
   const random = createJavaRandom(
     BigInt(seed) +
     BigInt(regionX) * REGION_X_MULTIPLIER +

@@ -1,5 +1,6 @@
 import { seedToJavaLong, isSlimeChunk } from "./slime.js";
 import { addMemo, clearMemos, deleteMemo, loadMemos } from "./storage.js";
+import { STRUCTURE_TYPES } from "./structures/config.js";
 import { detectStructures } from "./structures/detector.js";
 import { applyStructureLayer, getSourceLabel, getVisibleStructures } from "./structures/layer.js";
 import {
@@ -302,8 +303,10 @@ function generateMap(successMessage = "マップを生成しました。チャ�
   applyMemoMarkers();
   const editionLabel = edition === "bedrock" ? "統合版（実験的）" : "Java版";
   const editionNote = edition === "bedrock" ? ` ${BEDROCK_EXPERIMENTAL_MESSAGE}` : "";
+  const villageCandidateCount = countAutoStructuresByType(STRUCTURE_TYPES.VILLAGE);
+  const ruinedPortalCandidateCount = countAutoStructuresByType(STRUCTURE_TYPES.RUINED_PORTAL);
   const autoStructureNote = edition === "java"
-    ? ` / 廃ポータル候補 ${latestAutoStructures.length}件（候補表示）`
+    ? ` / 村候補 ${villageCandidateCount}件 / 廃ポータル候補 ${ruinedPortalCandidateCount}件（候補表示）`
     : "";
   elements.summary.textContent = `${editionLabel} / 中心チャンク X=${centerChunkX}, Z=${centerChunkZ} / ${diameter}×${diameter} / スライム ${slimeCount}件${autoStructureNote}。${editionNote}`;
   updateCenterStatus({ centerChunkX, centerChunkZ, centerX, centerZ });
@@ -490,6 +493,10 @@ function getVisibleStructureRecords() {
     activeCategories: getActiveCategories(),
     showLayer: elements.structureLayerToggle.checked,
   });
+}
+
+function countAutoStructuresByType(type) {
+  return latestAutoStructures.filter((structure) => structure.type === type).length;
 }
 
 function updateStructureLayerToggleLabel() {

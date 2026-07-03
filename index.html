@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="Minecraft Java版のシード値からスライムチャンクを確認し、探索用の座標を扱える日本語の静的ツールです。">
-    <title>Minecraft Seed Map JP v2.0</title>
+    <title>Minecraft Seed Map JP v1.5</title>
     <link rel="icon" href="assets/icons/favicon.svg" type="image/svg+xml">
     <link rel="stylesheet" href="css/style.css">
   </head>
@@ -12,7 +12,7 @@
     <header class="site-header">
       <div>
         <p class="eyebrow">外部通信なし / GitHub Pages対応</p>
-        <h1>Minecraft Seed Map JP v2.0</h1>
+        <h1>Minecraft Seed Map JP v1.5</h1>
         <p class="lead">シード値と座標から、Java版と実験的な統合版のスライムチャンクを日本語UIで確認できます。</p>
       </div>
       <div class="privacy-badge" aria-label="プライバシー方針">
@@ -37,7 +37,7 @@
             <span>エディション</span>
             <select id="edition-select" name="edition">
               <option value="java" selected>Java版</option>
-              <option value="bedrock">統合版（v2.0実験的）</option>
+              <option value="bedrock">統合版（v1.5実験的）</option>
             </select>
           </label>
 
@@ -93,8 +93,6 @@
               <span><i class="legend-chip slime"></i>スライム</span>
               <span><i class="legend-chip normal"></i>通常</span>
               <span><i class="legend-chip center"></i>中心付近</span>
-              <span><i class="legend-chip structure"></i>構造物</span>
-              <label class="layer-toggle"><input id="structure-layer-toggle" type="checkbox" checked> 構造物レイヤー</label>
             </div>
           </div>
 
@@ -196,10 +194,12 @@
               <option value="森の洋館">森の洋館</option>
               <option value="ピリジャー前哨基地">ピリジャー前哨基地</option>
               <option value="古代都市">古代都市</option>
-              <option value="トライアルチャンバー">トライアルチャンバー</option>
+              <option value="エンドポータル">エンドポータル</option>
               <option value="ネザー要塞">ネザー要塞</option>
               <option value="砦の遺跡">砦の遺跡</option>
               <option value="エンドシティ">エンドシティ</option>
+              <option value="トライアルチャンバー">トライアルチャンバー</option>
+              <option value="スポナー">スポナー</option>
               <option value="その他">その他</option>
             </select>
           </label>

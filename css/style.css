@@ -294,23 +294,6 @@ h2 {
   background: var(--center-chunk);
 }
 
-.legend-chip.structure {
-  border-radius: 50%;
-  background: var(--warning);
-}
-
-.layer-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  color: var(--muted);
-  font-weight: 700;
-}
-
-.layer-toggle input {
-  accent-color: var(--accent-strong);
-}
-
 .map-scroll {
   overflow: auto;
   max-height: 72vh;

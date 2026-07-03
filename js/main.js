@@ -9,7 +9,7 @@ import {
   toInteger,
 } from "./utils.js";
 
-const BEDROCK_UNSUPPORTED_MESSAGE = "統合版のスライムチャンク判定はv1.1では未対応です。Java版を選択してください。";
+const BEDROCK_EXPERIMENTAL_MESSAGE = "統合版のスライムチャンク判定はv1.2では実験的対応です。結果は今後検証が必要です。";
 
 const elements = {
   form: document.querySelector("#map-form"),
@@ -132,14 +132,6 @@ function generateMap() {
   const radius = toInteger(elements.radius.value);
   const edition = elements.edition.value;
 
-  if (edition !== "java") {
-    clearSelectedChunk();
-    elements.grid.innerHTML = "";
-    elements.summary.textContent = BEDROCK_UNSUPPORTED_MESSAGE;
-    setMessage(BEDROCK_UNSUPPORTED_MESSAGE, "error");
-    return;
-  }
-
   if (!seedText) {
     setMessage("シード値を入力してください。", "error");
     return;
@@ -186,8 +178,10 @@ function generateMap() {
   }
 
   elements.grid.appendChild(fragment);
-  elements.summary.textContent = `中心チャンク X=${centerChunkX}, Z=${centerChunkZ} / ${diameter}×${diameter} / スライム ${slimeCount}件。`;
-  setMessage("マップを生成しました。チャンクを選択すると詳細を確認できます。", "success");
+  const editionLabel = edition === "bedrock" ? "統合版（実験的）" : "Java版";
+  const editionNote = edition === "bedrock" ? ` ${BEDROCK_EXPERIMENTAL_MESSAGE}` : "";
+  elements.summary.textContent = `${editionLabel} / 中心チャンク X=${centerChunkX}, Z=${centerChunkZ} / ${diameter}×${diameter} / スライム ${slimeCount}件。${editionNote}`;
+  setMessage(edition === "bedrock" ? BEDROCK_EXPERIMENTAL_MESSAGE : "マップを生成しました。チャンクを選択すると詳細を確認できます。", "success");
 }
 
 function selectChunk(button) {

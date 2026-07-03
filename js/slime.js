@@ -20,10 +20,12 @@ export function javaStringHashCode(value) {
 }
 
 export function isSlimeChunk(worldSeed, chunkX, chunkZ, edition = "java") {
-  if (edition !== "java") {
-    return false;
-  }
+  return edition === "bedrock"
+    ? isBedrockSlimeChunkExperimental(worldSeed, chunkX, chunkZ)
+    : isJavaSlimeChunk(worldSeed, chunkX, chunkZ);
+}
 
+export function isJavaSlimeChunk(worldSeed, chunkX, chunkZ) {
   const x = BigInt(chunkX);
   const z = BigInt(chunkZ);
   const slimeSeed =
@@ -34,6 +36,19 @@ export function isSlimeChunk(worldSeed, chunkX, chunkZ, edition = "java") {
     z * 389711n;
 
   const random = new JavaRandom(slimeSeed ^ 987234911n);
+  return random.nextInt(10) === 0;
+}
+
+export function isBedrockSlimeChunkExperimental(worldSeed, chunkX, chunkZ) {
+  const x = BigInt(chunkX);
+  const z = BigInt(chunkZ);
+  const seed = BigInt(worldSeed);
+  const mixed =
+    seed * 6364136223846793005n +
+    x * 1442695040888963407n +
+    z * 22695477n +
+    x * z * 1103515245n;
+  const random = new JavaRandom(mixed ^ 0xBED20C4n);
   return random.nextInt(10) === 0;
 }
 

@@ -30,6 +30,7 @@ export const STRUCTURE_TYPES = {
   VILLAGE: STRUCTURE_CATEGORIES[0],
   STRONGHOLD: STRUCTURE_CATEGORIES[1],
   RUINED_PORTAL: STRUCTURE_CATEGORIES[2],
+  OCEAN_MONUMENT: STRUCTURE_CATEGORIES[3],
 };
 
 export const JAVA_STRUCTURE_SETTINGS = {
@@ -44,6 +45,12 @@ export const JAVA_STRUCTURE_SETTINGS = {
     spacing: 40,
     separation: 15,
     salt: 34222645n,
+  },
+  oceanMonument: {
+    type: STRUCTURE_TYPES.OCEAN_MONUMENT,
+    spacing: 32,
+    separation: 5,
+    salt: 10387313n,
   },
 };
 

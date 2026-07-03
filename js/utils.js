@@ -21,14 +21,36 @@ export function chunkToBlockRange(chunkCoordinate) {
   };
 }
 
+export function chunkToCenterBlock(chunkCoordinate) {
+  return chunkCoordinate * 16 + 8;
+}
+
 export function formatChunkDetails(chunk) {
   const xRange = chunkToBlockRange(chunk.x);
   const zRange = chunkToBlockRange(chunk.z);
+  const centerX = chunkToCenterBlock(chunk.x);
+  const centerZ = chunkToCenterBlock(chunk.z);
   return {
     chunkText: `X=${chunk.x}, Z=${chunk.z}`,
     blockText: `X=${xRange.start}〜${xRange.end} / Z=${zRange.start}〜${zRange.end}`,
+    centerText: `X=${centerX}, Z=${centerZ}`,
     resultText: chunk.isSlime ? "スライムチャンク" : "通常チャンク",
-    copyText: `チャンク座標: X=${chunk.x}, Z=${chunk.z}\nブロック範囲: X=${xRange.start}〜${xRange.end}, Z=${zRange.start}〜${zRange.end}\n判定: ${chunk.isSlime ? "スライムチャンク" : "通常チャンク"}`,
+    coordinateCopyText: `X=${centerX}, Z=${centerZ}`,
+    copyText: `チャンク座標: X=${chunk.x}, Z=${chunk.z}\nブロック範囲: X=${xRange.start}〜${xRange.end}, Z=${zRange.start}〜${zRange.end}\n中心ブロック座標: X=${centerX}, Z=${centerZ}\n判定: ${chunk.isSlime ? "スライムチャンク" : "通常チャンク"}`,
+  };
+}
+
+export function convertOverworldToNether(x, z) {
+  return {
+    x: x / 8,
+    z: z / 8,
+  };
+}
+
+export function convertNetherToOverworld(x, z) {
+  return {
+    x: x * 8,
+    z: z * 8,
   };
 }
 

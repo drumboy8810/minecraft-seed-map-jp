@@ -3,8 +3,8 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="Minecraft Java版のシード値からスライムチャンクを確認できる日本語の静的ツールです。">
-    <title>Minecraft Seed Map JP v1.0</title>
+    <meta name="description" content="Minecraft Java版のシード値からスライムチャンクを確認し、探索用の座標を扱える日本語の静的ツールです。">
+    <title>Minecraft Seed Map JP v1.1</title>
     <link rel="icon" href="assets/icons/favicon.svg" type="image/svg+xml">
     <link rel="stylesheet" href="css/style.css">
   </head>
@@ -12,7 +12,7 @@
     <header class="site-header">
       <div>
         <p class="eyebrow">外部通信なし / GitHub Pages対応</p>
-        <h1>Minecraft Seed Map JP v1.0</h1>
+        <h1>Minecraft Seed Map JP v1.1</h1>
         <p class="lead">シード値と座標から、Java版のスライムチャンクを日本語UIで確認できます。</p>
       </div>
       <div class="privacy-badge" aria-label="プライバシー方針">
@@ -37,7 +37,7 @@
             <span>エディション</span>
             <select id="edition-select" name="edition">
               <option value="java" selected>Java版</option>
-              <option value="bedrock">統合版（v1.0未対応）</option>
+              <option value="bedrock">統合版（v1.1未対応）</option>
             </select>
           </label>
 
@@ -113,12 +113,48 @@
               <dd>-</dd>
             </div>
             <div>
+              <dt>中心ブロック座標</dt>
+              <dd>-</dd>
+            </div>
+            <div>
               <dt>判定</dt>
               <dd>-</dd>
             </div>
           </dl>
-          <button id="copy-button" class="secondary-button full-width" type="button" disabled>座標をコピー</button>
+          <div class="detail-actions">
+            <button id="copy-button" class="secondary-button full-width" type="button" disabled>詳細をコピー</button>
+            <button id="copy-xz-button" class="secondary-button full-width" type="button" disabled>X/Zをコピー</button>
+          </div>
         </aside>
+      </section>
+
+      <section class="panel converter-panel" aria-labelledby="converter-title">
+        <div class="panel-heading split-heading">
+          <div>
+            <h2 id="converter-title">ネザー座標変換</h2>
+            <p>オーバーワールドとネザーのX/Z座標を相互変換できます。</p>
+          </div>
+          <div id="converter-result" class="converter-result" role="status" aria-live="polite">変換結果: -</div>
+        </div>
+
+        <form id="converter-form" class="converter-form" novalidate>
+          <label class="field">
+            <span>変換方向</span>
+            <select id="converter-direction" name="direction">
+              <option value="overworld-to-nether">オーバーワールド → ネザー</option>
+              <option value="nether-to-overworld">ネザー → オーバーワールド</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>X座標</span>
+            <input id="converter-x-input" type="number" inputmode="numeric" step="1" placeholder="0">
+          </label>
+          <label class="field">
+            <span>Z座標</span>
+            <input id="converter-z-input" type="number" inputmode="numeric" step="1" placeholder="0">
+          </label>
+          <button class="primary-button" type="submit">変換</button>
+        </form>
       </section>
 
       <section class="panel memo-panel" aria-labelledby="memo-title">

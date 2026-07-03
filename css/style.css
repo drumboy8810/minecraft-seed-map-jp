@@ -127,6 +127,7 @@ h2 {
 .control-panel,
 .memo-panel,
 .map-panel,
+.converter-panel,
 .detail-panel {
   padding: 18px;
 }
@@ -226,6 +227,11 @@ h2 {
 
 .full-width {
   width: 100%;
+}
+
+.detail-actions {
+  display: grid;
+  gap: 10px;
 }
 
 .message {
@@ -354,6 +360,23 @@ h2 {
   align-items: end;
 }
 
+.converter-form {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr 0.8fr auto;
+  gap: 14px;
+  align-items: end;
+}
+
+.converter-result {
+  flex: 0 0 auto;
+  padding: 10px 12px;
+  border: 1px solid #56634f;
+  border-radius: 6px;
+  background: var(--surface-3);
+  color: var(--accent-strong);
+  font-weight: 800;
+}
+
 .memo-list {
   display: grid;
   gap: 10px;
@@ -435,12 +458,14 @@ h2 {
   .control-panel,
   .memo-panel,
   .map-panel,
+  .converter-panel,
   .detail-panel {
     padding: 14px;
   }
 
   .form-grid,
-  .memo-form {
+  .memo-form,
+  .converter-form {
     grid-template-columns: 1fr;
   }
 

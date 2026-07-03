@@ -1,8 +1,15 @@
 import { seedToJavaLong, isSlimeChunk } from "./slime.js";
 import { addMemo, clearMemos, deleteMemo, loadMemos } from "./storage.js";
-import { blockToChunk, copyText, formatChunkDetails, toInteger } from "./utils.js";
+import {
+  blockToChunk,
+  convertNetherToOverworld,
+  convertOverworldToNether,
+  copyText,
+  formatChunkDetails,
+  toInteger,
+} from "./utils.js";
 
-const BEDROCK_UNSUPPORTED_MESSAGE = "統合版のスライムチャンク判定はv1.0では未対応です。Java版を選択してください。";
+const BEDROCK_UNSUPPORTED_MESSAGE = "統合版のスライムチャンク判定はv1.1では未対応です。Java版を選択してください。";
 
 const elements = {
   form: document.querySelector("#map-form"),
@@ -18,6 +25,12 @@ const elements = {
   summary: document.querySelector("#map-summary"),
   details: document.querySelector("#chunk-details"),
   copy: document.querySelector("#copy-button"),
+  copyXz: document.querySelector("#copy-xz-button"),
+  converterForm: document.querySelector("#converter-form"),
+  converterDirection: document.querySelector("#converter-direction"),
+  converterX: document.querySelector("#converter-x-input"),
+  converterZ: document.querySelector("#converter-z-input"),
+  converterResult: document.querySelector("#converter-result"),
   memoForm: document.querySelector("#memo-form"),
   memoTitle: document.querySelector("#memo-title-input"),
   memoX: document.querySelector("#memo-x-input"),
@@ -30,6 +43,7 @@ const elements = {
 
 let selectedChunk = null;
 let latestCopyText = "";
+let latestCoordinateCopyText = "";
 
 elements.form.addEventListener("submit", (event) => {
   event.preventDefault();
@@ -52,10 +66,24 @@ elements.reset.addEventListener("click", () => {
 elements.copy.addEventListener("click", async () => {
   try {
     await copyText(latestCopyText);
-    setMessage("座標をコピーしました。", "success");
+    setMessage("選択チャンクの詳細をコピーしました。", "success");
   } catch {
     setMessage("クリップボードへのコピーに失敗しました。手動で選択してコピーしてください。", "error");
   }
+});
+
+elements.copyXz.addEventListener("click", async () => {
+  try {
+    await copyText(latestCoordinateCopyText);
+    setMessage("中心ブロックのX/Z座標をコピーしました。", "success");
+  } catch {
+    setMessage("クリップボードへのコピーに失敗しました。手動で選択してコピーしてください。", "error");
+  }
+});
+
+elements.converterForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  convertCoordinates();
 });
 
 elements.memoForm.addEventListener("submit", (event) => {
@@ -186,14 +214,17 @@ function selectChunk(button) {
 
   const details = formatChunkDetails(selectedChunk);
   latestCopyText = details.copyText;
+  latestCoordinateCopyText = details.coordinateCopyText;
   elements.details.innerHTML = `
     <div><dt>チャンク座標</dt><dd>${details.chunkText}</dd></div>
     <div><dt>ブロック範囲</dt><dd>${details.blockText}</dd></div>
+    <div><dt>中心ブロック座標</dt><dd>${details.centerText}</dd></div>
     <div><dt>判定</dt><dd>${details.resultText}</dd></div>
   `;
   elements.copy.disabled = false;
-  elements.memoX.value = String(selectedChunk.x * 16);
-  elements.memoZ.value = String(selectedChunk.z * 16);
+  elements.copyXz.disabled = false;
+  elements.memoX.value = String(selectedChunk.x * 16 + 8);
+  elements.memoZ.value = String(selectedChunk.z * 16 + 8);
   if (selectedChunk.isSlime) {
     elements.memoType.value = "スライムトラップ予定地";
   }
@@ -202,12 +233,39 @@ function selectChunk(button) {
 function clearSelectedChunk() {
   selectedChunk = null;
   latestCopyText = "";
+  latestCoordinateCopyText = "";
   elements.copy.disabled = true;
+  elements.copyXz.disabled = true;
   elements.details.innerHTML = `
     <div><dt>チャンク座標</dt><dd>-</dd></div>
     <div><dt>ブロック範囲</dt><dd>-</dd></div>
+    <div><dt>中心ブロック座標</dt><dd>-</dd></div>
     <div><dt>判定</dt><dd>-</dd></div>
   `;
+}
+
+function convertCoordinates() {
+  const x = toInteger(elements.converterX.value);
+  const z = toInteger(elements.converterZ.value);
+
+  if (x === null || z === null) {
+    elements.converterResult.textContent = "変換結果: X/Zには整数を入力してください。";
+    setMessage("ネザー座標変換のX/Zには整数を入力してください。", "error");
+    return;
+  }
+
+  const isOverworldToNether = elements.converterDirection.value === "overworld-to-nether";
+  const converted = isOverworldToNether
+    ? convertOverworldToNether(x, z)
+    : convertNetherToOverworld(x, z);
+  const label = isOverworldToNether ? "ネザー" : "オーバーワールド";
+
+  elements.converterResult.textContent = `変換結果: ${label} X=${formatCoordinate(converted.x)}, Z=${formatCoordinate(converted.z)}`;
+  setMessage("座標を変換しました。", "success");
+}
+
+function formatCoordinate(value) {
+  return Number.isInteger(value) ? String(value) : value.toFixed(3).replace(/0+$/, "").replace(/\.$/, "");
 }
 
 function renderMemos() {

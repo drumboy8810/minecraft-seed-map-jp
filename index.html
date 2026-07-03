@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="Minecraft Java版のシード値からスライムチャンクを確認し、探索用の座標を扱える日本語の静的ツールです。">
-    <title>Minecraft Seed Map JP v1.2</title>
+    <title>Minecraft Seed Map JP v1.3</title>
     <link rel="icon" href="assets/icons/favicon.svg" type="image/svg+xml">
     <link rel="stylesheet" href="css/style.css">
   </head>
@@ -12,7 +12,7 @@
     <header class="site-header">
       <div>
         <p class="eyebrow">外部通信なし / GitHub Pages対応</p>
-        <h1>Minecraft Seed Map JP v1.2</h1>
+        <h1>Minecraft Seed Map JP v1.3</h1>
         <p class="lead">シード値と座標から、Java版と実験的な統合版のスライムチャンクを日本語UIで確認できます。</p>
       </div>
       <div class="privacy-badge" aria-label="プライバシー方針">
@@ -37,7 +37,7 @@
             <span>エディション</span>
             <select id="edition-select" name="edition">
               <option value="java" selected>Java版</option>
-              <option value="bedrock">統合版（v1.2実験的）</option>
+              <option value="bedrock">統合版（v1.3実験的）</option>
             </select>
           </label>
 
@@ -125,6 +125,7 @@
             <button id="copy-chunk-button" class="secondary-button full-width" type="button" disabled>チャンク座標をコピー</button>
             <button id="copy-center-button" class="secondary-button full-width" type="button" disabled>中心座標をコピー</button>
             <button id="copy-range-button" class="secondary-button full-width" type="button" disabled>ブロック範囲をコピー</button>
+            <button id="use-point-button" class="secondary-button full-width" type="button" disabled>この座標を地点登録に使う</button>
           </div>
         </aside>
       </section>
@@ -161,15 +162,15 @@
       <section class="panel memo-panel" aria-labelledby="memo-title">
         <div class="panel-heading split-heading">
           <div>
-            <h2 id="memo-title">探索メモ</h2>
-            <p>見つけた場所をブラウザ内だけに保存できます。</p>
+            <h2 id="memo-title">地点メモ</h2>
+            <p>見つけた場所をブラウザ内だけに保存し、表示中のマップにマーカーとして表示できます。</p>
           </div>
           <button id="clear-memos-button" class="danger-button" type="button">全削除</button>
         </div>
 
         <form id="memo-form" class="memo-form" novalidate>
           <label class="field">
-            <span>タイトル</span>
+            <span>地点名</span>
             <input id="memo-title-input" type="text" maxlength="60" placeholder="例: 拠点候補">
           </label>
           <label class="field">
@@ -187,7 +188,7 @@
               <option value="村">村</option>
               <option value="ネザーゲート">ネザーゲート</option>
               <option value="洞窟">洞窟</option>
-              <option value="スライムトラップ予定地">スライムトラップ予定地</option>
+              <option value="トラップ予定地">トラップ予定地</option>
               <option value="その他">その他</option>
             </select>
           </label>
@@ -195,7 +196,7 @@
             <span>メモ本文</span>
             <textarea id="memo-body-input" rows="3" maxlength="400" placeholder="補足を書いてください"></textarea>
           </label>
-          <button class="primary-button" type="submit">メモを追加</button>
+          <button class="primary-button" type="submit">地点を登録</button>
         </form>
 
         <div id="memo-list" class="memo-list" aria-live="polite"></div>

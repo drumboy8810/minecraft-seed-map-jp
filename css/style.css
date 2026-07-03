@@ -331,6 +331,23 @@ h2 {
   outline-offset: 1px;
 }
 
+.chunk-cell.has-marker {
+  position: relative;
+}
+
+.chunk-cell.has-marker::after {
+  content: "";
+  position: absolute;
+  right: 3px;
+  top: 3px;
+  width: 7px;
+  height: 7px;
+  border: 1px solid rgba(13, 24, 12, 0.86);
+  border-radius: 50%;
+  background: var(--warning);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.22);
+}
+
 .detail-list {
   display: grid;
   gap: 12px;
@@ -411,6 +428,21 @@ h2 {
   margin: 0;
   color: #e4eedc;
   white-space: pre-wrap;
+}
+
+.marker-detail {
+  display: grid;
+  gap: 8px;
+}
+
+.marker-detail h3 {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.marker-detail p {
+  margin: 0;
+  color: #e4eedc;
 }
 
 .empty-state {

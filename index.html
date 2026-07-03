@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="Minecraftのシード値からチャンク、スライムチャンク、手動登録した構造物マーカーを確認できる日本語の静的Seed Mapです。">
-    <title>Minecraft Seed Map JP v2.4</title>
+    <title>Minecraft Seed Map JP v2.5</title>
     <link rel="icon" href="assets/icons/favicon.svg" type="image/svg+xml">
     <link rel="stylesheet" href="css/style.css">
   </head>
@@ -12,8 +12,8 @@
     <header class="site-header">
       <div>
         <p class="eyebrow">外部通信なし / GitHub Pages対応</p>
-        <h1>Minecraft Seed Map JP v2.4</h1>
-        <p class="lead">シード値と座標からチャンクを確認し、スライムチャンク表示、簡易地形色分け、手動構造物マーカー、Java版の村・海底神殿・廃ポータル候補を扱える日本語Seed Mapです。</p>
+        <h1>Minecraft Seed Map JP v2.5</h1>
+        <p class="lead">シード値と座標からチャンクを確認し、スライムチャンク表示、provider方式の簡易地形色分け、手動構造物マーカー、Java版の村・海底神殿・廃ポータル候補を扱える日本語Seed Mapです。</p>
       </div>
       <div class="privacy-badge" aria-label="プライバシー方針">
         入力内容は外部送信されません
@@ -102,20 +102,20 @@
             <input id="terrain-layer-toggle" type="checkbox" checked>
             <span>地形色分けレイヤー: ON</span>
           </label>
+          <label class="terrain-mode field">
+            <span>地形モード</span>
+            <select id="terrain-mode-select">
+              <option value="simple" selected>簡易地形</option>
+              <option value="cubiomes">詳細バイオーム：準備中</option>
+            </select>
+          </label>
+          <p id="terrain-mode-status" class="layer-note">現在の地形モード: 簡易地形</p>
           <label class="layer-toggle">
             <input id="structure-layer-toggle" type="checkbox" checked>
             <span>構造物レイヤー: ON</span>
           </label>
           <p class="layer-note">手動登録した地点・構造物と、Java版の村・海底神殿・廃ポータル自動候補をこのレイヤーに表示します。海底神殿は候補表示のため、実際の生成位置と異なる場合があります。</p>
-          <div class="terrain-legend" aria-label="簡易地形色分けの凡例">
-            <span><i style="--terrain-color: #6fa85d"></i>草原</span>
-            <span><i style="--terrain-color: #3f7f4a"></i>森林</span>
-            <span><i style="--terrain-color: #c9b66d"></i>砂漠</span>
-            <span><i style="--terrain-color: #d8e3df"></i>雪原</span>
-            <span><i style="--terrain-color: #3f7f9f"></i>海</span>
-            <span><i style="--terrain-color: #7d8272"></i>山岳</span>
-            <span><i style="--terrain-color: #5f7650"></i>湿地</span>
-          </div>
+          <div id="terrain-legend" class="terrain-legend" aria-label="簡易地形色分けの凡例"></div>
           <p class="layer-note">地形色分けはSeed値と座標から作る簡易表示です。実際のMinecraftバイオームとは異なる場合があります。</p>
 
           <div class="map-scroll" aria-label="チャンクグリッドの横スクロール領域">

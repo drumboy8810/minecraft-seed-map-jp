@@ -323,6 +323,18 @@ h2 {
   font-size: 0.88rem;
 }
 
+.layer-note.is-warning {
+  color: var(--warning);
+  font-weight: 800;
+}
+
+.terrain-mode {
+  display: inline-grid;
+  min-width: 220px;
+  margin: 0 14px 12px 0;
+  vertical-align: top;
+}
+
 .terrain-legend {
   display: flex;
   flex-wrap: wrap;

@@ -3,7 +3,7 @@ import { addMemo, clearMemos, deleteMemo, loadMemos } from "./storage.js";
 import { STRUCTURE_TYPES } from "./structures/config.js";
 import { detectStructures } from "./structures/detector.js";
 import { applyStructureLayer, getSourceLabel, getVisibleStructures } from "./structures/layer.js";
-import { getTerrainForChunk } from "./terrain.js";
+import { getTerrainProvider } from "./terrain.js";
 import {
   blockToChunk,
   convertNetherToOverworld,
@@ -63,6 +63,9 @@ const elements = {
   summary: document.querySelector("#map-summary"),
   centerStatus: document.querySelector("#center-status"),
   terrainLayerToggle: document.querySelector("#terrain-layer-toggle"),
+  terrainMode: document.querySelector("#terrain-mode-select"),
+  terrainModeStatus: document.querySelector("#terrain-mode-status"),
+  terrainLegend: document.querySelector("#terrain-legend"),
   structureLayerToggle: document.querySelector("#structure-layer-toggle"),
   details: document.querySelector("#chunk-details"),
   copyChunk: document.querySelector("#copy-chunk-button"),
@@ -236,8 +239,16 @@ elements.terrainLayerToggle.addEventListener("change", () => {
   applyTerrainLayer();
 });
 
+elements.terrainMode.addEventListener("change", () => {
+  updateTerrainModeStatus();
+  renderTerrainLegend();
+  applyTerrainLayer();
+});
+
 renderCategoryFilters();
 updateTerrainLayerToggleLabel();
+updateTerrainModeStatus();
+renderTerrainLegend();
 updateStructureLayerToggleLabel();
 renderMemos();
 
@@ -448,16 +459,20 @@ function applyTerrainLayer() {
   if (!cells.length || latestWorldSeed === null) {
     return;
   }
+  const provider = getTerrainProvider(elements.terrainMode.value);
 
   for (const cell of cells) {
-    if (!elements.terrainLayerToggle.checked) {
+    if (!elements.terrainLayerToggle.checked || !provider.isAvailable) {
       cell.classList.remove("has-terrain");
       cell.style.removeProperty("--terrain-color");
       cell.dataset.terrain = "";
       continue;
     }
 
-    const terrain = getTerrainForChunk(latestWorldSeed, Number(cell.dataset.x), Number(cell.dataset.z));
+    const terrain = provider.getTerrainForChunk(latestWorldSeed, Number(cell.dataset.x), Number(cell.dataset.z));
+    if (!terrain) {
+      continue;
+    }
     cell.classList.add("has-terrain");
     cell.style.setProperty("--terrain-color", terrain.color);
     cell.dataset.terrain = terrain.label;
@@ -547,6 +562,29 @@ function updateTerrainLayerToggleLabel() {
     return;
   }
   label.textContent = elements.terrainLayerToggle.checked ? "地形色分けレイヤー: ON" : "地形色分けレイヤー: OFF";
+}
+
+function updateTerrainModeStatus() {
+  const provider = getTerrainProvider(elements.terrainMode.value);
+  elements.terrainModeStatus.textContent = provider.isAvailable
+    ? "現在の地形モード: 簡易地形"
+    : provider.unavailableMessage;
+  elements.terrainModeStatus.classList.toggle("is-warning", !provider.isAvailable);
+  if (!provider.isAvailable) {
+    setMessage(provider.unavailableMessage, "error");
+  }
+}
+
+function renderTerrainLegend() {
+  const provider = getTerrainProvider(elements.terrainMode.value);
+  const terrainTypes = provider.getLegend();
+  if (!terrainTypes.length) {
+    elements.terrainLegend.innerHTML = '<span>詳細バイオームの凡例は準備中です</span>';
+    return;
+  }
+  elements.terrainLegend.innerHTML = terrainTypes
+    .map((terrain) => `<span><i style="--terrain-color: ${terrain.color}"></i>${escapeHtml(terrain.label)}</span>`)
+    .join("");
 }
 
 function setCategoryFiltersChecked(checked) {

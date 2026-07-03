@@ -35,15 +35,17 @@ export function formatChunkDetails(chunk) {
     blockText: `X=${xRange.start}〜${xRange.end} / Z=${zRange.start}〜${zRange.end}`,
     centerText: `X=${centerX}, Z=${centerZ}`,
     resultText: chunk.isSlime ? "スライムチャンク" : "通常チャンク",
-    coordinateCopyText: `X=${centerX}, Z=${centerZ}`,
+    chunkCopyText: `チャンク座標: X=${chunk.x}, Z=${chunk.z}`,
+    centerCopyText: `中心ブロック座標: X=${centerX}, Z=${centerZ}`,
+    rangeCopyText: `ブロック範囲: X=${xRange.start}〜${xRange.end}, Z=${zRange.start}〜${zRange.end}`,
     copyText: `チャンク座標: X=${chunk.x}, Z=${chunk.z}\nブロック範囲: X=${xRange.start}〜${xRange.end}, Z=${zRange.start}〜${zRange.end}\n中心ブロック座標: X=${centerX}, Z=${centerZ}\n判定: ${chunk.isSlime ? "スライムチャンク" : "通常チャンク"}`,
   };
 }
 
 export function convertOverworldToNether(x, z) {
   return {
-    x: x / 8,
-    z: z / 8,
+    x: Math.round(x / 8),
+    z: Math.round(z / 8),
   };
 }
 

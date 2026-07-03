@@ -304,6 +304,11 @@ h2 {
   background: var(--warning);
 }
 
+.legend-chip.candidate {
+  border: 2px dashed var(--text);
+  background: transparent;
+}
+
 .layer-toggle {
   display: inline-flex;
   align-items: center;

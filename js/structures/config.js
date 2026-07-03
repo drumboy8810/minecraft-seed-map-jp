@@ -31,6 +31,10 @@ export const STRUCTURE_TYPES = {
   STRONGHOLD: STRUCTURE_CATEGORIES[1],
   RUINED_PORTAL: STRUCTURE_CATEGORIES[2],
   OCEAN_MONUMENT: STRUCTURE_CATEGORIES[3],
+  WOODLAND_MANSION: STRUCTURE_CATEGORIES[4],
+  PILLAGER_OUTPOST: STRUCTURE_CATEGORIES[5],
+  ANCIENT_CITY: STRUCTURE_CATEGORIES[6],
+  TRIAL_CHAMBERS: STRUCTURE_CATEGORIES[11],
 };
 
 export const JAVA_STRUCTURE_SETTINGS = {
@@ -51,6 +55,30 @@ export const JAVA_STRUCTURE_SETTINGS = {
     spacing: 32,
     separation: 5,
     salt: 10387313n,
+  },
+  woodlandMansion: {
+    type: STRUCTURE_TYPES.WOODLAND_MANSION,
+    spacing: 80,
+    separation: 20,
+    salt: 10387319n,
+  },
+  pillagerOutpost: {
+    type: STRUCTURE_TYPES.PILLAGER_OUTPOST,
+    spacing: 32,
+    separation: 8,
+    salt: 165745296n,
+  },
+  ancientCity: {
+    type: STRUCTURE_TYPES.ANCIENT_CITY,
+    spacing: 24,
+    separation: 8,
+    salt: 20083232n,
+  },
+  trialChambers: {
+    type: STRUCTURE_TYPES.TRIAL_CHAMBERS,
+    spacing: 34,
+    separation: 12,
+    salt: 94251327n,
   },
 };
 

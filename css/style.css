@@ -249,6 +249,13 @@ h2 {
   color: var(--danger);
 }
 
+.center-status {
+  margin: 8px 0 0;
+  color: var(--accent-strong);
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
 .map-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 320px;
@@ -408,6 +415,12 @@ h2 {
   border: 1px solid #3d4938;
   border-radius: 8px;
   background: var(--surface-2);
+}
+
+.memo-actions {
+  display: grid;
+  gap: 8px;
+  align-content: start;
 }
 
 .memo-card h3 {

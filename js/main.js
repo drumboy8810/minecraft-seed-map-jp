@@ -9,7 +9,7 @@ import {
   toInteger,
 } from "./utils.js";
 
-const BEDROCK_EXPERIMENTAL_MESSAGE = "統合版のスライムチャンク判定はv1.3では実験的対応です。結果は今後検証が必要です。";
+const BEDROCK_EXPERIMENTAL_MESSAGE = "統合版のスライムチャンク判定はv1.4では実験的対応です。結果は今後検証が必要です。";
 
 const elements = {
   form: document.querySelector("#map-form"),
@@ -19,10 +19,13 @@ const elements = {
   centerX: document.querySelector("#center-x-input"),
   centerZ: document.querySelector("#center-z-input"),
   radius: document.querySelector("#radius-select"),
+  jump: document.querySelector("#jump-button"),
+  origin: document.querySelector("#origin-button"),
   reset: document.querySelector("#reset-button"),
   message: document.querySelector("#message"),
   grid: document.querySelector("#chunk-grid"),
   summary: document.querySelector("#map-summary"),
+  centerStatus: document.querySelector("#center-status"),
   details: document.querySelector("#chunk-details"),
   copyChunk: document.querySelector("#copy-chunk-button"),
   copyCenter: document.querySelector("#copy-center-button"),
@@ -54,6 +57,14 @@ elements.form.addEventListener("submit", (event) => {
   generateMap();
 });
 
+elements.jump.addEventListener("click", () => {
+  generateMap("指定座標へ移動しました。");
+});
+
+elements.origin.addEventListener("click", () => {
+  moveMapTo(0, 0, "原点へ戻りました。");
+});
+
 elements.reset.addEventListener("click", () => {
   elements.seed.value = "";
   elements.edition.value = "java";
@@ -64,6 +75,7 @@ elements.reset.addEventListener("click", () => {
   clearSelectedChunk();
   elements.grid.innerHTML = "";
   elements.summary.textContent = "条件を入力してマップを生成してください。";
+  updateCenterStatus(null);
   setMessage("初期値に戻しました。", "success");
 });
 
@@ -129,6 +141,12 @@ elements.clearMemos.addEventListener("click", () => {
 });
 
 elements.memoList.addEventListener("click", (event) => {
+  const moveButton = event.target.closest("[data-move-memo]");
+  if (moveButton) {
+    moveMapTo(Number(moveButton.dataset.x), Number(moveButton.dataset.z), "地点周辺へ移動しました。");
+    return;
+  }
+
   const button = event.target.closest("[data-delete-memo]");
   if (!button) {
     return;
@@ -141,7 +159,13 @@ elements.memoList.addEventListener("click", (event) => {
 
 renderMemos();
 
-function generateMap() {
+function moveMapTo(x, z, successMessage) {
+  elements.centerX.value = String(x);
+  elements.centerZ.value = String(z);
+  generateMap(successMessage);
+}
+
+function generateMap(successMessage = "マップを生成しました。チャンクを選択すると詳細を確認できます。") {
   const seedText = elements.seed.value.trim();
   const centerX = toInteger(elements.centerX.value);
   const centerZ = toInteger(elements.centerZ.value);
@@ -200,7 +224,8 @@ function generateMap() {
   const editionLabel = edition === "bedrock" ? "統合版（実験的）" : "Java版";
   const editionNote = edition === "bedrock" ? ` ${BEDROCK_EXPERIMENTAL_MESSAGE}` : "";
   elements.summary.textContent = `${editionLabel} / 中心チャンク X=${centerChunkX}, Z=${centerChunkZ} / ${diameter}×${diameter} / スライム ${slimeCount}件。${editionNote}`;
-  setMessage(edition === "bedrock" ? BEDROCK_EXPERIMENTAL_MESSAGE : "マップを生成しました。チャンクを選択すると詳細を確認できます。", "success");
+  updateCenterStatus({ centerChunkX, centerChunkZ, centerX, centerZ });
+  setMessage(edition === "bedrock" ? BEDROCK_EXPERIMENTAL_MESSAGE : successMessage, "success");
 }
 
 function selectChunk(button) {
@@ -304,9 +329,20 @@ function renderMemos() {
         </div>
         <p class="memo-body">${escapeHtml(memo.body || "メモ本文なし")}</p>
       </div>
-      <button class="danger-button" type="button" data-delete-memo="${memo.id}">削除</button>
+      <div class="memo-actions">
+        <button class="secondary-button" type="button" data-move-memo="${memo.id}" data-x="${memo.x}" data-z="${memo.z}">移動</button>
+        <button class="danger-button" type="button" data-delete-memo="${memo.id}">削除</button>
+      </div>
     </article>
   `).join("");
+}
+
+function updateCenterStatus(center) {
+  if (!center) {
+    elements.centerStatus.textContent = "中心チャンク: - / 中心ブロック: -";
+    return;
+  }
+  elements.centerStatus.textContent = `中心チャンク: X=${center.centerChunkX}, Z=${center.centerChunkZ} / 中心ブロック: X=${center.centerX}, Z=${center.centerZ}`;
 }
 
 function applyMemoMarkers() {

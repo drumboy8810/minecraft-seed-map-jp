@@ -1,4 +1,4 @@
-import { detectStructures } from "../structures/detector.js?v=5.0.0";
+import { detectStructures } from "../structures/detector.js?v=5.0.1";
 
 export function getStructuresInView({ seed, edition, version, centerX, centerZ, radius }) {
   return detectStructures({

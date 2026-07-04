@@ -1,12 +1,12 @@
-import { blockToChunk } from "../utils.js";
+import { blockToChunk } from "../utils.js?v=5.0.1";
 import {
   JAVA_STRUCTURE_SETTINGS,
   STRUCTURE_DIMENSIONS,
   STRUCTURE_SOURCES,
   STRUCTURE_TYPES,
   createStructureRecord,
-} from "./config.js";
-import { createJavaRandom } from "./rng.js";
+} from "./config.js?v=5.0.1";
+import { createJavaRandom } from "./rng.js?v=5.0.1";
 
 const REGION_X_MULTIPLIER = 341873128712n;
 const REGION_Z_MULTIPLIER = 132897987541n;

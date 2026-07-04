@@ -1,7 +1,7 @@
-import { getBiomeAt } from "./biome-provider.js";
-import { isSlimeChunkAt } from "./slime-provider.js";
-import { STRUCTURE_SOURCES, getCategoryColor, getCategorySymbol, normalizeStructureCategory } from "../structures/config.js";
-import { blockToChunk } from "../utils.js";
+import { getBiomeAt } from "./biome-provider.js?v=5.0.1";
+import { isSlimeChunkAt } from "./slime-provider.js?v=5.0.1";
+import { STRUCTURE_SOURCES, getCategoryColor, getCategorySymbol, normalizeStructureCategory } from "../structures/config.js?v=5.0.1";
+import { blockToChunk } from "../utils.js?v=5.0.1";
 
 const ZOOM_LEVELS = [
   { id: "wide", label: "広域", scale: 0.045, tile: 96 },

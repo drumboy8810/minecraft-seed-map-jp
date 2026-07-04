@@ -1,10 +1,10 @@
-import { seedToJavaLong, isSlimeChunk } from "./slime.js";
-import { addMemo, clearMemos, deleteMemo, loadMemos } from "./storage.js";
-import { MapEngine } from "./map/map-engine.js?v=5.0.0";
-import { getStructuresInView } from "./map/structure-provider.js?v=5.0.0";
-import { getEditionLabel, getSourceLabel, getVisibleStructures } from "./structures/layer.js?v=5.0.0";
-import { STRUCTURE_CATEGORIES, getCategoryColor, normalizeStructureCategory } from "./structures/config.js?v=5.0.0";
-import { getTerrainProvider } from "./terrain.js?v=5.0.0";
+import { seedToJavaLong, isSlimeChunk } from "./slime.js?v=5.0.1";
+import { addMemo, clearMemos, deleteMemo, loadMemos } from "./storage.js?v=5.0.1";
+import { MapEngine } from "./map/map-engine.js?v=5.0.1";
+import { getStructuresInView } from "./map/structure-provider.js?v=5.0.1";
+import { getEditionLabel, getSourceLabel, getVisibleStructures } from "./structures/layer.js?v=5.0.1";
+import { STRUCTURE_CATEGORIES, getCategoryColor, normalizeStructureCategory } from "./structures/config.js?v=5.0.1";
+import { getTerrainProvider } from "./terrain.js?v=5.0.1";
 import {
   blockToChunk,
   convertNetherToOverworld,
@@ -12,7 +12,7 @@ import {
   copyText,
   formatChunkDetails,
   toInteger,
-} from "./utils.js";
+} from "./utils.js?v=5.0.1";
 
 const BEDROCK_CANDIDATE_MESSAGE = "統合版は候補表示対応です。Java版とは別扱いですが、現時点では簡易候補のため今後検証が必要です。";
 const VERSION_OPTIONS = {

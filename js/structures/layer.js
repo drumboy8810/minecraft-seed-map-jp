@@ -1,10 +1,10 @@
-import { blockToChunk } from "../utils.js?v=6.0.0";
+import { blockToChunk } from "../utils.js?v=7.0.0";
 import {
   STRUCTURE_SOURCES,
   getCategoryColor,
   getCategorySymbol,
   normalizeStructureCategory,
-} from "./config.js?v=6.0.0";
+} from "./config.js?v=7.0.0";
 
 export function getVisibleStructures({
   manualStructures,

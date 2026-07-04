@@ -1,4 +1,4 @@
-import { detectStructures } from "../structures/detector.js?v=6.0.0";
+import { detectStructures } from "../structures/detector.js?v=7.0.0";
 
 const CACHE_LIMIT = 48;
 const cache = new Map();
@@ -36,9 +36,10 @@ export const simpleStructureProvider = {
       radius: expandedRadius,
     });
 
-    cache.set(key, structures);
+    const annotated = structures.map(annotateStructure);
+    cache.set(key, annotated);
     trimCache();
-    return structures.map((structure) => ({ ...structure }));
+    return annotated.map((structure) => ({ ...structure }));
   },
   getCacheStats() {
     return {
@@ -46,6 +47,16 @@ export const simpleStructureProvider = {
     };
   },
 };
+
+function annotateStructure(structure) {
+  return {
+    ...structure,
+    providerId: "simple-structure",
+    providerName: "高速プレビュー候補",
+    precisionMode: "preview",
+    basis: structure.reason || "seed + region座標 + 疑似バイオームによる候補表示",
+  };
+}
 
 function trimCache() {
   while (cache.size > CACHE_LIMIT) {

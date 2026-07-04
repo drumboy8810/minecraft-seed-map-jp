@@ -1,7 +1,7 @@
 import {
   getStructureCacheStats as getProviderStructureCacheStats,
   getStructuresInView as getProviderStructuresInView,
-} from "../providers/provider-manager.js?v=6.0.0";
+} from "../providers/provider-manager.js?v=7.0.0";
 
 export function getStructuresInView({ seed, edition, version, centerX, centerZ, radius, mode = "preview" }) {
   return getProviderStructuresInView({ seed, edition, version, centerX, centerZ, radius, mode });

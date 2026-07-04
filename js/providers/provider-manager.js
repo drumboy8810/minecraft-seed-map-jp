@@ -1,18 +1,19 @@
-import { simpleBiomeProvider } from "./simple-biome-provider.js?v=6.0.0";
-import { simpleStructureProvider } from "./simple-structure-provider.js?v=6.0.0";
-import { cubiomesBiomeProvider } from "./cubiomes-biome-provider.js?v=6.0.0";
-import { cubiomesStructureProvider } from "./cubiomes-structure-provider.js?v=6.0.0";
+import { simpleBiomeProvider } from "./simple-biome-provider.js?v=7.0.0";
+import { simpleStructureProvider } from "./simple-structure-provider.js?v=7.0.0";
+import { cubiomesBiomeProvider } from "./cubiomes-biome-provider.js?v=7.0.0";
+import { cubiomesStructureProvider } from "./cubiomes-structure-provider.js?v=7.0.0";
 
 export const PRECISION_MODES = {
   PREVIEW: "preview",
   ACCURATE: "accurate",
 };
 
+let accurateLoadRequested = false;
+
 export function getPrecisionModeOptions(edition = "java") {
   if (edition === "bedrock") {
     return [
       ["preview", "統合版: 候補表示のみ"],
-      ["accurate", "正確生成: 未対応"],
     ];
   }
   return [
@@ -28,6 +29,7 @@ export function normalizePrecisionMode(mode) {
 export function getActiveProviders({ mode = "preview", edition = "java" } = {}) {
   const precisionMode = normalizePrecisionMode(mode);
   if (precisionMode === PRECISION_MODES.ACCURATE && edition === "java") {
+    requestAccurateProviderLoad();
     const exactReady = cubiomesBiomeProvider.isAvailable() && cubiomesStructureProvider.isAvailable();
     return {
       biomeProvider: exactReady ? cubiomesBiomeProvider : simpleBiomeProvider,
@@ -62,6 +64,25 @@ export function getActiveProviders({ mode = "preview", edition = "java" } = {}) 
   };
 }
 
+export async function loadAccurateProviders() {
+  const [biome, structure] = await Promise.allSettled([
+    cubiomesBiomeProvider.load(),
+    cubiomesStructureProvider.load(),
+  ]);
+  return {
+    biome,
+    structure,
+    status: getProviderStatus({ mode: PRECISION_MODES.ACCURATE, edition: "java" }),
+  };
+}
+
+function requestAccurateProviderLoad() {
+  if (!accurateLoadRequested && (!cubiomesBiomeProvider.isAvailable() || !cubiomesStructureProvider.isAvailable())) {
+    accurateLoadRequested = true;
+    loadAccurateProviders().catch(() => {});
+  }
+}
+
 export function getBiomeAt(seed, edition, version, x, z, mode = "preview") {
   const { biomeProvider } = getActiveProviders({ mode, edition });
   return biomeProvider.getBiomeAt(seed, edition, version, x, z);
@@ -83,6 +104,10 @@ export function getProviderStatus({ mode = "preview", edition = "java" } = {}) {
   const structureStatus = active.structureProvider.getStatus();
   return {
     ...active,
+    biomeProviderId: active.biomeProvider.id,
+    biomeProviderName: active.biomeProvider.label,
+    structureProviderId: active.structureProvider.id,
+    structureProviderName: active.structureProvider.label,
     biomeStatus,
     structureStatus,
     message: active.message,

@@ -1,19 +1,21 @@
-import { seedToJavaLong, isSlimeChunk } from "./slime.js?v=6.0.0";
-import { addMemo, clearMemos, deleteMemo, loadMemos } from "./storage.js?v=6.0.0";
-import { MapEngine } from "./map/map-engine.js?v=6.0.0";
-import { getStructureCacheStats, getStructuresInView } from "./map/structure-provider.js?v=6.0.0";
-import { getEditionLabel, getSourceLabel, getVisibleStructures } from "./structures/layer.js?v=6.0.0";
-import { STRUCTURE_CATEGORIES, getCategoryColor, getCategorySymbol, normalizeStructureCategory } from "./structures/config.js?v=6.0.0";
-import { getProviderStatus, getPrecisionModeOptions, normalizePrecisionMode } from "./providers/provider-manager.js?v=6.0.0";
-import { getTerrainProvider } from "./terrain.js?v=6.0.0";
+import { seedToJavaLong, isSlimeChunk } from "./slime.js?v=7.0.0";
+import { addMemo, clearMemos, deleteMemo, loadMemos } from "./storage.js?v=7.0.0";
+import { MapEngine } from "./map/map-engine.js?v=7.0.0";
+import { getStructureCacheStats, getStructuresInView } from "./map/structure-provider.js?v=7.0.0";
+import { getEditionLabel, getSourceLabel, getVisibleStructures } from "./structures/layer.js?v=7.0.0";
+import { STRUCTURE_CATEGORIES, getCategoryColor, getCategorySymbol, normalizeStructureCategory } from "./structures/config.js?v=7.0.0";
+import { getBiomeAt as getProviderBiomeAt, getProviderStatus, getPrecisionModeOptions, loadAccurateProviders, normalizePrecisionMode } from "./providers/provider-manager.js?v=7.0.0";
+import { getTerrainProvider } from "./terrain.js?v=7.0.0";
 import {
   blockToChunk,
+  blockToRegion,
+  chunkToRegion,
   convertNetherToOverworld,
   convertOverworldToNether,
   copyText,
   formatChunkDetails,
   toInteger,
-} from "./utils.js?v=6.0.0";
+} from "./utils.js?v=7.0.0";
 
 const BEDROCK_CANDIDATE_MESSAGE = "統合版は候補表示対応です。Java版とは別扱いですが、現時点では簡易候補のため今後検証が必要です。";
 const VERSION_OPTIONS = {
@@ -169,7 +171,10 @@ elements.version?.addEventListener("change", () => {
   regenerateMapIfReady("バージョンを切り替えて再描画しました。");
 });
 
-elements.precisionMode?.addEventListener("change", () => {
+elements.precisionMode?.addEventListener("change", async () => {
+  if (getValue(elements.edition, "java") === "java" && getValue(elements.precisionMode, "preview") === "accurate") {
+    await loadAccurateProviders();
+  }
   updateTerrainModeStatus();
   regenerateMapIfReady("精度モードを切り替えて再描画しました。");
 });
@@ -402,6 +407,8 @@ function selectMapPoint(selection) {
   selectedChunk = {
     x: selection.chunkX,
     z: selection.chunkZ,
+    blockX: selection.blockX,
+    blockZ: selection.blockZ,
     isSlime: isSlimeChunk(latestWorldSeed || 0n, selection.chunkX, selection.chunkZ, latestEdition),
   };
   latestSelectedMarkers = selection.markers || [];
@@ -483,6 +490,8 @@ function renderSelectedChunkDetails() {
   const details = formatChunkDetails(selectedChunk);
   const netherPoint = convertOverworldToNether(latestCenterPoint.x, latestCenterPoint.z);
   const terrainText = getSelectedTerrainText(selectedChunk);
+  const coordinateDebug = getCoordinateDebugDetails(selectedChunk);
+  const providerDetails = getProviderDetails();
   const markerDetails = getSelectedMarkerDetailsV52(latestSelectedMarkers);
   const nearbyDetails = getNearbyCandidateDetailsV52(selectedChunk);
 
@@ -494,10 +503,13 @@ function renderSelectedChunkDetails() {
           <div><dt>チャンク座標</dt><dd>${details.chunkText}</dd></div>
           <div><dt>ブロック範囲</dt><dd>${details.blockText}</dd></div>
           <div><dt>中心ブロック座標</dt><dd>${details.centerText}</dd></div>
+          <div><dt>クリックブロック座標</dt><dd>X=${selectedChunk.blockX}, Z=${selectedChunk.blockZ}</dd></div>
           <div><dt>バイオーム/地形</dt><dd>${escapeHtml(terrainText)}</dd></div>
         </dl>
       </dd>
     </div>
+    ${coordinateDebug}
+    ${providerDetails}
     <div class="detail-section">
       <dt>判定情報</dt>
       <dd>
@@ -527,6 +539,52 @@ function getSelectedMarkerDetailsV52(markers) {
     <div class="detail-section">
       <dt>メモ/マーカー</dt>
       <dd><div class="nearby-list">${markerItems}</div></dd>
+    </div>
+  `;
+}
+
+function getCoordinateDebugDetails(chunk) {
+  const blockX = Number.isFinite(chunk.blockX) ? chunk.blockX : chunk.x * 16 + 8;
+  const blockZ = Number.isFinite(chunk.blockZ) ? chunk.blockZ : chunk.z * 16 + 8;
+  const chunkX = blockToChunk(blockX);
+  const chunkZ = blockToChunk(blockZ);
+  const regionX = blockToRegion(blockX);
+  const regionZ = blockToRegion(blockZ);
+  const structureRegionX = chunkToRegion(chunk.x);
+  const structureRegionZ = chunkToRegion(chunk.z);
+
+  return `
+    <div class="detail-section">
+      <dt>座標デバッグ</dt>
+      <dd>
+        <dl class="detail-sublist">
+          <div><dt>block</dt><dd>X=${blockX}, Z=${blockZ}</dd></div>
+          <div><dt>chunk</dt><dd>X=${chunkX}, Z=${chunkZ}</dd></div>
+          <div><dt>region</dt><dd>X=${regionX}, Z=${regionZ}（32チャンク単位）</dd></div>
+          <div><dt>選択チャンクのregion</dt><dd>X=${structureRegionX}, Z=${structureRegionZ}</dd></div>
+        </dl>
+      </dd>
+    </div>
+  `;
+}
+
+function getProviderDetails() {
+  const status = getProviderStatus({ mode: latestPrecisionMode, edition: latestEdition });
+  const modeLabel = latestPrecisionMode === "accurate" ? "正確生成" : "高速プレビュー";
+  const activeLabel = status.activeMode === "accurate" ? "正確生成" : "高速プレビュー";
+
+  return `
+    <div class="detail-section">
+      <dt>生成provider</dt>
+      <dd>
+        <dl class="detail-sublist">
+          <div><dt>選択モード</dt><dd>${escapeHtml(modeLabel)}</dd></div>
+          <div><dt>実行モード</dt><dd>${escapeHtml(activeLabel)}${status.fallback ? "（フォールバック）" : ""}</dd></div>
+          <div><dt>バイオームprovider</dt><dd>${escapeHtml(status.biomeProviderName)} / ${escapeHtml(status.biomeProviderId)}</dd></div>
+          <div><dt>構造物provider</dt><dd>${escapeHtml(status.structureProviderName)} / ${escapeHtml(status.structureProviderId)}</dd></div>
+          <div><dt>状態</dt><dd>${escapeHtml(status.message)}</dd></div>
+        </dl>
+      </dd>
     </div>
   `;
 }
@@ -580,6 +638,8 @@ function renderCompactStructureItem(structure, distance = 0, isSelectedMarker = 
   const distanceText = isSelectedMarker ? "クリック地点" : `約${Math.round(distance)}ブロック`;
   const sourceText = getSourceLabel(structure.source);
   const editionText = getEditionLabel(structure.edition);
+  const providerText = structure.providerName || (structure.providerId ? structure.providerId : "provider未設定");
+  const basisText = structure.basis || structure.reason || "生成根拠未設定";
 
   return `
     <article class="nearby-item" style="--marker-color: ${color}">
@@ -588,6 +648,8 @@ function renderCompactStructureItem(structure, distance = 0, isSelectedMarker = 
         <h3>${escapeHtml(structure.name || structure.title || category)}</h3>
         <p>${escapeHtml(distanceText)} / X=${structure.x}, Z=${structure.z}</p>
         <p>${escapeHtml(sourceText)} / ${escapeHtml(editionText)}</p>
+        <p>${escapeHtml(providerText)}</p>
+        <p>${escapeHtml(basisText)}</p>
         <span class="confidence-pill ${confidenceClass}">候補精度: ${escapeHtml(confidence)}</span>
       </div>
     </article>
@@ -595,12 +657,10 @@ function renderCompactStructureItem(structure, distance = 0, isSelectedMarker = 
 }
 
 function getSelectedTerrainText(chunk) {
-  const provider = getTerrainProvider(getValue(elements.terrainMode, "simple"));
-  if (!provider?.isAvailable || typeof provider.getTerrainForChunk !== "function") {
-    return "詳細バイオーム準備中";
-  }
-  const terrain = provider.getTerrainForChunk(latestWorldSeed ?? 0n, chunk.x, chunk.z);
-  return getTerrainLabel(terrain);
+  const blockX = Number.isFinite(chunk.blockX) ? chunk.blockX : chunk.x * 16 + 8;
+  const blockZ = Number.isFinite(chunk.blockZ) ? chunk.blockZ : chunk.z * 16 + 8;
+  const terrain = getProviderBiomeAt(latestWorldSeed ?? 0n, latestEdition, latestVersion, blockX, blockZ, latestPrecisionMode);
+  return `${getTerrainLabel(terrain)} / biomeId=${escapePlainText(terrain?.id || terrain?.biomeId || "unknown")}`;
 }
 
 function getTerrainLabel(terrain) {
@@ -1084,4 +1144,8 @@ function escapeHtml(value) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
+}
+
+function escapePlainText(value) {
+  return String(value ?? "");
 }

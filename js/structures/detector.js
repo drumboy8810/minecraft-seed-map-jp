@@ -1,12 +1,12 @@
-import { blockToChunk } from "../utils.js?v=6.0.0";
-import { simpleTerrainProvider } from "../terrain/simple-terrain-provider.js?v=6.0.0";
+import { blockToChunk } from "../utils.js?v=7.0.0";
+import { simpleTerrainProvider } from "../terrain/simple-terrain-provider.js?v=7.0.0";
 import {
   STRUCTURE_DIMENSIONS,
   STRUCTURE_SOURCES,
   STRUCTURE_TYPES,
   createStructureRecord,
-} from "./config.js?v=6.0.0";
-import { createJavaRandom } from "./rng.js?v=6.0.0";
+} from "./config.js?v=7.0.0";
+import { createJavaRandom } from "./rng.js?v=7.0.0";
 
 const REGION_X_MULTIPLIER = 341873128712n;
 const REGION_Z_MULTIPLIER = 132897987541n;

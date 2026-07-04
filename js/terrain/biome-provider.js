@@ -1,5 +1,5 @@
-import { cubiomesProvider } from "./cubiomes-provider.js?v=6.0.0";
-import { simpleTerrainProvider } from "./simple-terrain-provider.js?v=6.0.0";
+import { cubiomesProvider } from "./cubiomes-provider.js?v=7.0.0";
+import { simpleTerrainProvider } from "./simple-terrain-provider.js?v=7.0.0";
 
 const providers = {
   [simpleTerrainProvider.id]: simpleTerrainProvider,

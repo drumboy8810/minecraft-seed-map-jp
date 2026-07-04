@@ -13,6 +13,14 @@ export function blockToChunk(blockCoordinate) {
   return Math.floor(blockCoordinate / 16);
 }
 
+export function chunkToRegion(chunkCoordinate, regionSize = 32) {
+  return Math.floor(chunkCoordinate / regionSize);
+}
+
+export function blockToRegion(blockCoordinate, regionSize = 32) {
+  return chunkToRegion(blockToChunk(blockCoordinate), regionSize);
+}
+
 export function chunkToBlockRange(chunkCoordinate) {
   const start = chunkCoordinate * 16;
   return {

@@ -1,4 +1,4 @@
-import { getStatus } from "../biome/cubiomes-provider.js?v=6.0.0";
+import { getStatus } from "../biome/cubiomes-provider.js?v=7.0.0";
 
 export const cubiomesProvider = {
   id: "cubiomes",

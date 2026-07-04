@@ -1,7 +1,7 @@
 import {
   generateBiomeTiles as generateProviderBiomeTiles,
   getBiomeAt as getProviderBiomeAt,
-} from "../providers/provider-manager.js?v=6.0.0";
+} from "../providers/provider-manager.js?v=7.0.0";
 
 export function getBiomeAt(seed, edition, version, x, z, mode = "preview") {
   return getProviderBiomeAt(seed, edition, version, x, z, mode);

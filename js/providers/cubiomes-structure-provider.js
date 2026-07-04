@@ -17,7 +17,7 @@ export const cubiomesStructureProvider = {
       ok: available,
       message: available
         ? "正確生成エンジン: 構造物生成providerを利用できます。"
-        : "正確生成エンジン未導入: cubiomes WASM未配置のため構造物は候補表示です。",
+        : "正確生成エンジン未導入: assets/wasm/cubiomes.wasm を配置してください。未配置時の構造物は高速プレビュー候補です。",
       wasmPath: status.wasmPath,
       cachedAreas: 0,
     };

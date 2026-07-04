@@ -68,6 +68,18 @@ generate_area(seed, version, centerX, centerZ, radius)
 4. 生成した `cubiomes.wasm` を `assets/wasm/` に配置します。
 5. `THIRD_PARTY_NOTICES.md` と `licenses/` にMITライセンス表記を追加します。
 
+## 正確生成で優先する対象
+
+1. Java版バイオーム表示
+2. 村
+3. 廃ポータル
+4. 海底神殿
+5. 森の洋館
+6. ピリジャー前哨基地
+7. 古代都市
+8. トライアルチャンバー
+9. 要塞
+
 ## 注意点
 
 - Chunkbaseと完全一致する保証は、cubiomes統合後も検証が必要です。

@@ -18,7 +18,7 @@ export const cubiomesBiomeProvider = {
       ok: available,
       message: available
         ? "正確生成エンジン: cubiomes WASMを利用できます。"
-        : "正確生成エンジン未導入: cubiomes WASM未配置のため高速プレビューで表示します。",
+        : "正確生成エンジン未導入: assets/wasm/cubiomes.wasm を配置してください。tools/cubiomes-wasm/README.md に導入手順があります。",
       wasmPath: status.wasmPath,
     };
   },

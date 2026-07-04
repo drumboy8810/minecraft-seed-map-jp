@@ -18,7 +18,7 @@ export function getPrecisionModeOptions(edition = "java") {
   }
   return [
     ["preview", "高速プレビュー"],
-    ["accurate", "正確生成: Java版準備中"],
+    ["accurate", "正確生成: cubiomes WASM導入"],
   ];
 }
 
@@ -39,7 +39,7 @@ export function getActiveProviders({ mode = "preview", edition = "java" } = {}) 
       fallback: !exactReady,
       message: exactReady
         ? "正確生成: cubiomes WASMを利用中です。"
-        : "正確生成エンジン未導入: cubiomes WASM未配置のため高速プレビューで表示します。",
+        : "正確生成エンジン未導入: assets/wasm/cubiomes.wasm を配置してください。導入手順は tools/cubiomes-wasm/README.md を参照してください。現在は高速プレビューで表示します。",
     };
   }
 
@@ -50,7 +50,7 @@ export function getActiveProviders({ mode = "preview", edition = "java" } = {}) 
       requestedMode: precisionMode,
       activeMode: PRECISION_MODES.PREVIEW,
       fallback: precisionMode === PRECISION_MODES.ACCURATE,
-      message: "統合版は候補表示のみです。正確生成エンジンは未対応です。",
+      message: "統合版は候補表示のみです。Bedrock正確生成は未対応のため、Chunkbase比較用には使えません。",
     };
   }
 
@@ -60,7 +60,7 @@ export function getActiveProviders({ mode = "preview", edition = "java" } = {}) 
     requestedMode: precisionMode,
     activeMode: PRECISION_MODES.PREVIEW,
     fallback: false,
-    message: "高速プレビュー: 疑似生成を表示中です。",
+    message: "高速プレビュー: 疑似生成を表示中です。実ワールド/Chunkbaseとの一致確認には使えません。",
   };
 }
 

@@ -176,7 +176,7 @@ export function getStatus() {
 }
 
 export function getUnavailableMessage() {
-  return "cubiomes WASM未配置です。正確生成は準備中で、高速プレビューを利用します。";
+  return "cubiomes WASM未配置です。assets/wasm/cubiomes.wasm を配置してください。導入手順は tools/cubiomes-wasm/README.md を参照してください。";
 }
 
 function getStatusResult(ok) {

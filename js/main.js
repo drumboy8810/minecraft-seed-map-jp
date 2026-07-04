@@ -464,11 +464,24 @@ function clearSelectedChunk() {
 
 function renderEmptyDetails() {
   if (!elements.details) return;
+  const centerBlockX = toInteger(getValue(elements.centerX)) ?? 0;
+  const centerBlockZ = toInteger(getValue(elements.centerZ)) ?? 0;
+  const centerChunkX = blockToChunk(centerBlockX);
+  const centerChunkZ = blockToChunk(centerBlockZ);
+  const coordinateDebug = getCoordinateDebugDetails({
+    x: centerChunkX,
+    z: centerChunkZ,
+    blockX: centerBlockX,
+    blockZ: centerBlockZ,
+  });
+  const providerDetails = getProviderDetails();
   elements.details.innerHTML = `
     <div class="detail-section">
       <dt>選択地点</dt>
-      <dd>マップをクリックすると、チャンク座標と周辺情報を表示します。</dd>
+      <dd>マップをクリックすると、クリック地点の座標と周辺情報を表示します。未選択時は中心座標を表示します。</dd>
     </div>
+    ${coordinateDebug}
+    ${providerDetails}
     <div class="detail-section">
       <dt>判定情報</dt>
       <dd>-</dd>
@@ -1025,7 +1038,7 @@ function updateTerrainModeStatus() {
   const edition = getValue(elements.edition, latestEdition);
   const providerStatus = getProviderStatus({ mode, edition });
   elements.terrainModeStatus.textContent = provider.isAvailable
-    ? `地形モード: 疑似バイオームを利用中 / ${providerStatus.message}`
+    ? `${latestPrecisionMode === "accurate" ? "正確生成" : "高速プレビュー"} / ${providerStatus.message}`
     : `${provider.unavailableMessage} / ${providerStatus.message}`;
   elements.terrainModeStatus.classList.toggle("is-warning", !provider.isAvailable || providerStatus.fallback);
   if (!provider.isAvailable || providerStatus.fallback) {

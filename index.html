@@ -44,7 +44,7 @@
             <span>精度モード</span>
             <select id="precision-mode-select">
               <option value="preview" selected>高速プレビュー</option>
-              <option value="accurate">正確生成: Java版準備中</option>
+              <option value="accurate">正確生成: cubiomes WASM導入</option>
             </select>
           </label>
 
@@ -119,7 +119,7 @@
               <option value="cubiomes">詳細バイオーム: 準備中 / WASM未配置</option>
             </select>
           </label>
-          <p id="terrain-mode-status" class="layer-note">地形モード: 疑似バイオームを利用中</p>
+          <p id="terrain-mode-status" class="layer-note">高速プレビュー: 疑似生成です。実ワールド/Chunkbase比較用ではありません。</p>
           <p id="version-note" class="layer-note">対象: Java版。1.21 / 1.20 / 1.19 / 1.18は現時点では同一候補ロジックです。</p>
         </section>
 
@@ -149,7 +149,7 @@
             構造物候補: 未生成
           </div>
           <p class="layer-note">ドラッグで移動、マウスホイールでズームできます。構造物候補はスライムチャンクON/OFFとは独立して表示されます。</p>
-          <p class="layer-note is-warning">構造物と疑似バイオームはChunkbase完全一致ではありません。候補表示のため、実際の生成位置と異なる場合があります。</p>
+          <p class="layer-note is-warning">高速プレビューは疑似生成です。実ワールド/Chunkbase比較にはJava版の正確生成エンジン導入が必要です。</p>
           <div id="terrain-legend" class="terrain-legend" aria-label="疑似バイオーム凡例"></div>
 
           <div class="map-scroll" aria-label="Seed Mapの表示領域">
@@ -182,7 +182,7 @@
         <div class="panel-heading split-heading">
           <div>
             <h2 id="status-title">対応状況</h2>
-            <p>現在使える機能と準備中の機能です。</p>
+            <p>現在使える機能と、正確生成エンジン導入が必要な項目です。</p>
           </div>
           <p class="status-note">候補表示は実際の生成位置と異なる場合があります。</p>
         </div>
@@ -195,7 +195,7 @@
           <div class="status-item"><span>Java版構造物候補</span><strong class="status-badge candidate">候補表示</strong></div>
           <div class="status-item"><span>統合版構造物候補</span><strong class="status-badge candidate">候補表示</strong></div>
           <div class="status-item"><span>疑似バイオーム</span><strong class="status-badge done">対応済み</strong></div>
-          <div class="status-item"><span>詳細バイオーム</span><strong class="status-badge preparing">準備中</strong></div>
+          <div class="status-item"><span>詳細バイオーム</span><strong class="status-badge preparing">WASM導入待ち</strong></div>
           <div class="status-item"><span>cubiomes WASM</span><strong class="status-badge preparing">未同梱</strong></div>
           <div class="status-item"><span>Java正確バイオーム</span><strong class="status-badge preparing">WASM待ち</strong></div>
           <div class="status-item"><span>Java正確構造物</span><strong class="status-badge preparing">WASM待ち</strong></div>

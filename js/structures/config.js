@@ -99,12 +99,33 @@ export const CATEGORY_COLORS = {
   "その他": "#b9c7b0",
 };
 
+export const CATEGORY_SYMBOLS = {
+  "村": "村",
+  "要塞": "要",
+  "廃ポータル": "廃",
+  "海底神殿": "海",
+  "森の洋館": "森",
+  "ピリジャー前哨基地": "前",
+  "古代都市": "古",
+  "エンドポータル": "終",
+  "ネザー要塞": "ネ",
+  "砦の遺跡": "砦",
+  "エンドシティ": "都",
+  "トライアルチャンバー": "試",
+  "スポナー": "湧",
+  "その他": "他",
+};
+
 export function normalizeStructureCategory(category) {
   return STRUCTURE_CATEGORIES.includes(category) ? category : "その他";
 }
 
 export function getCategoryColor(category) {
   return CATEGORY_COLORS[normalizeStructureCategory(category)] || CATEGORY_COLORS["その他"];
+}
+
+export function getCategorySymbol(category) {
+  return CATEGORY_SYMBOLS[normalizeStructureCategory(category)] || CATEGORY_SYMBOLS["その他"];
 }
 
 export function createStructureRecord({
@@ -116,6 +137,7 @@ export function createStructureRecord({
   dimension = STRUCTURE_DIMENSIONS.OVERWORLD,
   source = STRUCTURE_SOURCES.MANUAL,
   note = "",
+  edition = "",
   createdAt,
 }) {
   return {
@@ -127,6 +149,7 @@ export function createStructureRecord({
     dimension,
     source,
     note,
+    edition,
     createdAt,
   };
 }

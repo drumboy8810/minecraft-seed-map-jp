@@ -2,6 +2,7 @@ import { blockToChunk } from "../utils.js";
 import {
   STRUCTURE_SOURCES,
   getCategoryColor,
+  getCategorySymbol,
   normalizeStructureCategory,
 } from "./config.js";
 
@@ -54,6 +55,7 @@ export function applyStructureLayer({ grid, structures }) {
     cell.classList.toggle("has-auto-marker", markers.some((marker) => marker.source === STRUCTURE_SOURCES.AUTO));
     cell.dataset.markerIds = markers.map((marker) => marker.id).join(",");
     if (markers.length) {
+      const primaryMarker = markers[0];
       for (const marker of markers) {
         if (renderedMarkerIds.has(marker.id)) {
           continue;
@@ -65,13 +67,20 @@ export function applyStructureLayer({ grid, structures }) {
           manualVisible += 1;
         }
       }
-      cell.style.setProperty("--marker-color", getCategoryColor(markers[0].type));
+      cell.style.setProperty("--marker-color", getCategoryColor(primaryMarker.type));
+      cell.dataset.markerSymbol = getCategorySymbol(primaryMarker.type);
+      cell.dataset.markerCount = String(markers.length);
       cell.setAttribute("aria-label", `${cell.dataset.baseLabel}、構造物 ${markers.length}件`);
       cell.title = markers
-        .map((marker) => `${marker.name} (${normalizeStructureCategory(marker.type)} / ${getSourceLabel(marker.source)})`)
+        .map((marker) => {
+          const edition = marker.edition ? ` / ${getEditionLabel(marker.edition)}` : "";
+          return `${marker.name} (${normalizeStructureCategory(marker.type)} / ${getSourceLabel(marker.source)}${edition}) X=${marker.x}, Z=${marker.z}`;
+        })
         .join("\n");
     } else {
       cell.style.removeProperty("--marker-color");
+      cell.dataset.markerSymbol = "";
+      cell.dataset.markerCount = "";
       cell.setAttribute("aria-label", cell.dataset.baseLabel);
       cell.removeAttribute("title");
     }
@@ -86,4 +95,14 @@ export function applyStructureLayer({ grid, structures }) {
 
 export function getSourceLabel(source) {
   return source === STRUCTURE_SOURCES.AUTO ? "自動" : "手動";
+}
+
+export function getEditionLabel(edition) {
+  if (edition === "bedrock") {
+    return "統合版";
+  }
+  if (edition === "java") {
+    return "Java版";
+  }
+  return "共通";
 }

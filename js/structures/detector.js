@@ -37,6 +37,7 @@ export function detectStructures({ seed, edition, centerX, centerZ, radius }) {
       idPrefix: "village",
       name: "村候補",
       note: "村は候補表示のため、実際の生成位置と異なる場合があります。",
+      edition,
     }),
     ...detectStructureCandidates({
       seed,
@@ -47,6 +48,7 @@ export function detectStructures({ seed, edition, centerX, centerZ, radius }) {
       idPrefix: "woodland-mansion",
       name: "森の洋館候補",
       note: "森の洋館は候補表示のため、実際の生成位置と異なる場合があります。",
+      edition,
     }),
     ...detectStructureCandidates({
       seed,
@@ -57,6 +59,7 @@ export function detectStructures({ seed, edition, centerX, centerZ, radius }) {
       idPrefix: "pillager-outpost",
       name: "ピリジャー前哨基地候補",
       note: "ピリジャー前哨基地は候補表示のため、実際の生成位置と異なる場合があります。",
+      edition,
     }),
     ...detectStructureCandidates({
       seed,
@@ -67,6 +70,7 @@ export function detectStructures({ seed, edition, centerX, centerZ, radius }) {
       idPrefix: "ancient-city",
       name: "古代都市候補",
       note: "古代都市は候補表示のため、実際の生成位置と異なる場合があります。",
+      edition,
     }),
     ...detectStructureCandidates({
       seed,
@@ -77,6 +81,7 @@ export function detectStructures({ seed, edition, centerX, centerZ, radius }) {
       idPrefix: "trial-chambers",
       name: "トライアルチャンバー候補",
       note: "トライアルチャンバーは候補表示のため、実際の生成位置と異なる場合があります。",
+      edition,
     }),
     ...detectStructureCandidates({
       seed,
@@ -87,6 +92,7 @@ export function detectStructures({ seed, edition, centerX, centerZ, radius }) {
       idPrefix: "ocean-monument",
       name: "海底神殿候補",
       note: "海底神殿は候補表示のため、実際の生成位置と異なる場合があります。",
+      edition,
     }),
     ...detectStructureCandidates({
       seed,
@@ -97,6 +103,7 @@ export function detectStructures({ seed, edition, centerX, centerZ, radius }) {
       idPrefix: "ruined-portal",
       name: "廃ポータル候補",
       note: "候補表示のため、実際の生成位置と異なる場合があります。",
+      edition,
     }),
   ];
 }
@@ -110,6 +117,16 @@ function detectBedrockStructureCandidates({ seed, centerX, centerZ, radius }) {
   const note = "統合版の構造物は候補表示のため、実際の生成位置と異なる場合があります。現時点では同一候補ロジックです。";
 
   return [
+    ...detectStrongholdCandidates({
+      seed: bedrockSeed,
+      centerX,
+      centerZ,
+      radius,
+      idPrefix: "bedrock-stronghold",
+      name: "統合版 要塞候補",
+      note,
+      edition: "bedrock",
+    }),
     ...detectStructureCandidates({
       seed: bedrockSeed,
       centerX,
@@ -119,6 +136,7 @@ function detectBedrockStructureCandidates({ seed, centerX, centerZ, radius }) {
       idPrefix: "bedrock-village",
       name: "統合版 村候補",
       note,
+      edition: "bedrock",
     }),
     ...detectStructureCandidates({
       seed: bedrockSeed,
@@ -129,6 +147,7 @@ function detectBedrockStructureCandidates({ seed, centerX, centerZ, radius }) {
       idPrefix: "bedrock-ruined-portal",
       name: "統合版 廃ポータル候補",
       note,
+      edition: "bedrock",
     }),
     ...detectStructureCandidates({
       seed: bedrockSeed,
@@ -139,6 +158,7 @@ function detectBedrockStructureCandidates({ seed, centerX, centerZ, radius }) {
       idPrefix: "bedrock-ocean-monument",
       name: "統合版 海底神殿候補",
       note,
+      edition: "bedrock",
     }),
     ...detectStructureCandidates({
       seed: bedrockSeed,
@@ -149,6 +169,7 @@ function detectBedrockStructureCandidates({ seed, centerX, centerZ, radius }) {
       idPrefix: "bedrock-woodland-mansion",
       name: "統合版 森の洋館候補",
       note,
+      edition: "bedrock",
     }),
     ...detectStructureCandidates({
       seed: bedrockSeed,
@@ -159,11 +180,34 @@ function detectBedrockStructureCandidates({ seed, centerX, centerZ, radius }) {
       idPrefix: "bedrock-pillager-outpost",
       name: "統合版 ピリジャー前哨基地候補",
       note,
+      edition: "bedrock",
+    }),
+    ...detectStructureCandidates({
+      seed: bedrockSeed,
+      centerX,
+      centerZ,
+      radius,
+      settings: JAVA_STRUCTURE_SETTINGS.ancientCity,
+      idPrefix: "bedrock-ancient-city",
+      name: "統合版 古代都市候補",
+      note,
+      edition: "bedrock",
+    }),
+    ...detectStructureCandidates({
+      seed: bedrockSeed,
+      centerX,
+      centerZ,
+      radius,
+      settings: JAVA_STRUCTURE_SETTINGS.trialChambers,
+      idPrefix: "bedrock-trial-chambers",
+      name: "統合版 トライアルチャンバー候補",
+      note,
+      edition: "bedrock",
     }),
   ];
 }
 
-function detectStructureCandidates({ seed, centerX, centerZ, radius, settings, idPrefix, name, note }) {
+function detectStructureCandidates({ seed, centerX, centerZ, radius, settings, idPrefix, name, note, edition = "java" }) {
   const centerChunkX = blockToChunk(centerX);
   const centerChunkZ = blockToChunk(centerZ);
   const minChunkX = centerChunkX - radius;
@@ -197,6 +241,7 @@ function detectStructureCandidates({ seed, centerX, centerZ, radius, settings, i
         dimension: STRUCTURE_DIMENSIONS.OVERWORLD,
         source: STRUCTURE_SOURCES.AUTO,
         note,
+        edition,
       }));
     }
   }
@@ -204,7 +249,16 @@ function detectStructureCandidates({ seed, centerX, centerZ, radius, settings, i
   return candidates;
 }
 
-function detectStrongholdCandidates({ seed, centerX, centerZ, radius }) {
+function detectStrongholdCandidates({
+  seed,
+  centerX,
+  centerZ,
+  radius,
+  idPrefix = "stronghold",
+  name = "要塞候補",
+  note = "要塞は候補表示のため、実際の生成位置と異なる場合があります。",
+  edition = "java",
+}) {
   const centerChunkX = blockToChunk(centerX);
   const centerChunkZ = blockToChunk(centerZ);
   const minChunkX = centerChunkX - radius;
@@ -230,14 +284,15 @@ function detectStrongholdCandidates({ seed, centerX, centerZ, radius }) {
       chunkZ <= maxChunkZ
     ) {
       candidates.push(createStructureRecord({
-        id: `auto:stronghold:${index}`,
-        name: "要塞候補",
+        id: `auto:${idPrefix}:${index}`,
+        name,
         type: STRUCTURE_TYPES.STRONGHOLD,
         x: chunkX * 16 + 8,
         z: chunkZ * 16 + 8,
         dimension: STRUCTURE_DIMENSIONS.OVERWORLD,
         source: STRUCTURE_SOURCES.AUTO,
-        note: "要塞は候補表示のため、実際の生成位置と異なる場合があります。",
+        note,
+        edition,
       }));
     }
 

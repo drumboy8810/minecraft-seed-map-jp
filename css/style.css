@@ -423,8 +423,8 @@ h2 {
 }
 
 .chunk-cell {
-  width: 20px;
-  height: 20px;
+  width: var(--chunk-size, 20px);
+  height: var(--chunk-size, 20px);
   border-radius: 3px;
   border: 1px solid rgba(255, 255, 255, 0.06);
   background: var(--normal-chunk);
@@ -477,20 +477,29 @@ h2 {
 }
 
 .chunk-cell.has-marker::after {
-  content: "";
+  content: attr(data-marker-symbol);
   position: absolute;
-  right: 3px;
-  top: 3px;
-  width: 7px;
-  height: 7px;
+  right: 1px;
+  top: 1px;
+  display: grid;
+  place-items: center;
+  min-width: min(14px, calc(var(--chunk-size, 20px) - 2px));
+  height: min(14px, calc(var(--chunk-size, 20px) - 2px));
+  padding: 0 2px;
   border: 1px solid rgba(13, 24, 12, 0.86);
-  border-radius: 50%;
+  border-radius: 3px;
   background: var(--marker-color, var(--warning));
+  color: #0d180c;
+  font-size: clamp(6px, calc(var(--chunk-size, 20px) * 0.45), 9px);
+  font-weight: 900;
+  line-height: 1;
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.22);
 }
 
 .chunk-cell.has-auto-marker::after {
-  border: 2px dashed rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.92);
+  outline: 1px dashed rgba(255, 255, 255, 0.88);
+  outline-offset: 1px;
 }
 
 .detail-list {
@@ -793,8 +802,8 @@ h2 {
   }
 
   .chunk-cell {
-    width: 18px;
-    height: 18px;
+    width: var(--chunk-size, 18px);
+    height: var(--chunk-size, 18px);
   }
 
   .memo-card {

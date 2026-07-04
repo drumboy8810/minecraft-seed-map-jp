@@ -155,6 +155,10 @@ export function createStructureRecord({
   note = "",
   edition = "",
   createdAt,
+  confidence,
+  reason,
+  version,
+  biome,
 }) {
   return {
     id,
@@ -167,5 +171,9 @@ export function createStructureRecord({
     note,
     edition,
     createdAt,
+    confidence,
+    reason,
+    version,
+    biome,
   };
 }

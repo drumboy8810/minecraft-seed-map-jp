@@ -1,224 +1,167 @@
-import { blockToChunk } from "../utils.js?v=5.1.0";
+import { blockToChunk } from "../utils.js?v=5.2.0";
+import { simpleTerrainProvider } from "../terrain/simple-terrain-provider.js?v=5.2.0";
 import {
-  JAVA_STRUCTURE_SETTINGS,
   STRUCTURE_DIMENSIONS,
   STRUCTURE_SOURCES,
   STRUCTURE_TYPES,
   createStructureRecord,
-} from "./config.js?v=5.1.0";
-import { createJavaRandom } from "./rng.js?v=5.1.0";
+} from "./config.js?v=5.2.0";
+import { createJavaRandom } from "./rng.js?v=5.2.0";
 
 const REGION_X_MULTIPLIER = 341873128712n;
 const REGION_Z_MULTIPLIER = 132897987541n;
 const STRONGHOLD_COUNT = 128;
 const STRONGHOLD_DISTANCE_CHUNKS = 32;
-const CANDIDATE_NOTE = "候補表示のため、実際の生成位置と異なる場合があります。";
+const DEFAULT_MAX_CANDIDATES = 900;
 
-export function detectStructures({ seed, edition, centerX, centerZ, radius }) {
-  if (edition === "bedrock") {
-    return detectBedrockStructureCandidates({ seed, centerX, centerZ, radius });
-  }
-  if (edition !== "java") {
-    return [];
-  }
+const JAVA_SETTINGS = [
+  {
+    key: "village",
+    type: STRUCTURE_TYPES.VILLAGE,
+    name: "村候補",
+    spacing: 32,
+    separation: 8,
+    salt: 10387312n,
+    preferredBiomes: ["plains", "desert", "savanna", "snow"],
+    nearbyBiomes: ["forest", "river"],
+    highReason: "疑似バイオームが村向きです。",
+    mediumReason: "村が生成されやすい地形の近くです。",
+  },
+  {
+    key: "ruined-portal",
+    type: STRUCTURE_TYPES.RUINED_PORTAL,
+    name: "廃ポータル候補",
+    spacing: 40,
+    separation: 15,
+    salt: 34222645n,
+    preferredBiomes: ["plains", "forest", "desert", "savanna", "snow", "mountains", "badlands", "swamp", "jungle"],
+    allowLow: true,
+    highReason: "広い地形で候補になりやすい構造物です。",
+    mediumReason: "周辺地形を問わない広域候補です。",
+  },
+  {
+    key: "ocean-monument",
+    type: STRUCTURE_TYPES.OCEAN_MONUMENT,
+    name: "海底神殿候補",
+    spacing: 32,
+    separation: 5,
+    salt: 10387313n,
+    preferredBiomes: ["ocean"],
+    nearbyBiomes: ["river", "swamp"],
+    highReason: "疑似バイオームが海です。",
+    mediumReason: "水辺寄りの地形です。",
+  },
+  {
+    key: "woodland-mansion",
+    type: STRUCTURE_TYPES.WOODLAND_MANSION,
+    name: "森の洋館候補",
+    spacing: 80,
+    separation: 20,
+    salt: 10387319n,
+    preferredBiomes: ["dark_forest"],
+    nearbyBiomes: ["forest"],
+    highReason: "疑似バイオームが暗い森です。",
+    mediumReason: "森林地形の近くです。",
+  },
+  {
+    key: "pillager-outpost",
+    type: STRUCTURE_TYPES.PILLAGER_OUTPOST,
+    name: "ピリジャー前哨基地候補",
+    spacing: 32,
+    separation: 8,
+    salt: 165745296n,
+    preferredBiomes: ["plains", "desert", "savanna", "snow"],
+    nearbyBiomes: ["forest", "river"],
+    highReason: "村向き地形に近いため前哨基地候補です。",
+    mediumReason: "村周辺として扱える地形です。",
+  },
+  {
+    key: "ancient-city",
+    type: STRUCTURE_TYPES.ANCIENT_CITY,
+    name: "古代都市候補",
+    spacing: 24,
+    separation: 8,
+    salt: 20083232n,
+    preferredBiomes: ["mountains", "snow"],
+    nearbyBiomes: ["dark_forest"],
+    highReason: "山岳/雪原系の疑似バイオームです。",
+    mediumReason: "高低差のありそうな地形に近い候補です。",
+  },
+  {
+    key: "trial-chambers",
+    type: STRUCTURE_TYPES.TRIAL_CHAMBERS,
+    name: "トライアルチャンバー候補",
+    spacing: 34,
+    separation: 12,
+    salt: 94251327n,
+    preferredBiomes: ["plains", "forest", "desert", "savanna", "snow", "mountains", "badlands", "swamp", "jungle", "dark_forest"],
+    allowLow: true,
+    highReason: "広い地形で候補として扱います。",
+    mediumReason: "現在は広域候補として表示しています。",
+  },
+];
 
-  return [
-    ...detectStrongholdCandidates({ seed, centerX, centerZ, radius }),
-    ...detectStructureCandidates({
-      seed,
+const BEDROCK_SETTINGS = JAVA_SETTINGS.map((setting) => ({
+  ...setting,
+  spacing: Math.max(20, Math.round(setting.spacing * 0.92)),
+  separation: Math.max(4, Math.round(setting.separation * 0.85)),
+  salt: setting.salt + 912673n,
+  name: `統合版 ${setting.name}`,
+}));
+
+export function detectStructures({ seed, edition, version, centerX, centerZ, radius, maxCandidates = DEFAULT_MAX_CANDIDATES }) {
+  const searchRadius = Math.min(Math.max(radius + Math.ceil(radius * 0.55), radius + 24), 220);
+  const settings = edition === "bedrock" ? BEDROCK_SETTINGS : JAVA_SETTINGS;
+  const structureSeed = edition === "bedrock" ? BigInt(seed) ^ 0x5bd1e995n : BigInt(seed);
+  const records = [
+    ...detectStrongholdCandidates({
+      seed: structureSeed,
       centerX,
       centerZ,
-      radius,
-      settings: JAVA_STRUCTURE_SETTINGS.village,
-      idPrefix: "village",
-      name: "村候補",
-      note: `村は${CANDIDATE_NOTE}`,
+      radius: searchRadius,
       edition,
-    }),
-    ...detectStructureCandidates({
-      seed,
-      centerX,
-      centerZ,
-      radius,
-      settings: JAVA_STRUCTURE_SETTINGS.woodlandMansion,
-      idPrefix: "woodland-mansion",
-      name: "森の洋館候補",
-      note: `森の洋館は${CANDIDATE_NOTE}`,
-      edition,
-    }),
-    ...detectStructureCandidates({
-      seed,
-      centerX,
-      centerZ,
-      radius,
-      settings: JAVA_STRUCTURE_SETTINGS.pillagerOutpost,
-      idPrefix: "pillager-outpost",
-      name: "ピリジャー前哨基地候補",
-      note: `ピリジャー前哨基地は${CANDIDATE_NOTE}`,
-      edition,
-    }),
-    ...detectStructureCandidates({
-      seed,
-      centerX,
-      centerZ,
-      radius,
-      settings: JAVA_STRUCTURE_SETTINGS.ancientCity,
-      idPrefix: "ancient-city",
-      name: "古代都市候補",
-      note: `古代都市は${CANDIDATE_NOTE}`,
-      edition,
-    }),
-    ...detectStructureCandidates({
-      seed,
-      centerX,
-      centerZ,
-      radius,
-      settings: JAVA_STRUCTURE_SETTINGS.trialChambers,
-      idPrefix: "trial-chambers",
-      name: "トライアルチャンバー候補",
-      note: `トライアルチャンバーは${CANDIDATE_NOTE}`,
-      edition,
-    }),
-    ...detectStructureCandidates({
-      seed,
-      centerX,
-      centerZ,
-      radius,
-      settings: JAVA_STRUCTURE_SETTINGS.oceanMonument,
-      idPrefix: "ocean-monument",
-      name: "海底神殿候補",
-      note: `海底神殿は${CANDIDATE_NOTE}`,
-      edition,
-    }),
-    ...detectStructureCandidates({
-      seed,
-      centerX,
-      centerZ,
-      radius,
-      settings: JAVA_STRUCTURE_SETTINGS.ruinedPortal,
-      idPrefix: "ruined-portal",
-      name: "廃ポータル候補",
-      note: `廃ポータルは${CANDIDATE_NOTE}`,
-      edition,
+      version,
     }),
   ];
+
+  for (const setting of settings) {
+    records.push(...detectRegionStructureCandidates({
+      seed: structureSeed,
+      centerX,
+      centerZ,
+      radius: searchRadius,
+      setting,
+      edition,
+      version,
+    }));
+    if (records.length > maxCandidates) break;
+  }
+
+  return records
+    .sort((a, b) => distanceSquared(a, centerX, centerZ) - distanceSquared(b, centerX, centerZ))
+    .slice(0, maxCandidates);
 }
 
 export function isStructureAutoDetectionAvailable() {
   return true;
 }
 
-function detectBedrockStructureCandidates({ seed, centerX, centerZ, radius }) {
-  const bedrockSeed = BigInt(seed) ^ 0x5bd1e995n;
-  const note = "統合版の構造物は候補表示です。実際の生成位置と異なる場合があります。現時点ではJava版候補ロジックを元にした簡易候補です。";
-
-  return [
-    ...detectStrongholdCandidates({
-      seed: bedrockSeed,
-      centerX,
-      centerZ,
-      radius,
-      idPrefix: "bedrock-stronghold",
-      name: "統合版 要塞候補",
-      note,
-      edition: "bedrock",
-    }),
-    ...detectStructureCandidates({
-      seed: bedrockSeed,
-      centerX,
-      centerZ,
-      radius,
-      settings: JAVA_STRUCTURE_SETTINGS.village,
-      idPrefix: "bedrock-village",
-      name: "統合版 村候補",
-      note,
-      edition: "bedrock",
-    }),
-    ...detectStructureCandidates({
-      seed: bedrockSeed,
-      centerX,
-      centerZ,
-      radius,
-      settings: JAVA_STRUCTURE_SETTINGS.ruinedPortal,
-      idPrefix: "bedrock-ruined-portal",
-      name: "統合版 廃ポータル候補",
-      note,
-      edition: "bedrock",
-    }),
-    ...detectStructureCandidates({
-      seed: bedrockSeed,
-      centerX,
-      centerZ,
-      radius,
-      settings: JAVA_STRUCTURE_SETTINGS.oceanMonument,
-      idPrefix: "bedrock-ocean-monument",
-      name: "統合版 海底神殿候補",
-      note,
-      edition: "bedrock",
-    }),
-    ...detectStructureCandidates({
-      seed: bedrockSeed,
-      centerX,
-      centerZ,
-      radius,
-      settings: JAVA_STRUCTURE_SETTINGS.woodlandMansion,
-      idPrefix: "bedrock-woodland-mansion",
-      name: "統合版 森の洋館候補",
-      note,
-      edition: "bedrock",
-    }),
-    ...detectStructureCandidates({
-      seed: bedrockSeed,
-      centerX,
-      centerZ,
-      radius,
-      settings: JAVA_STRUCTURE_SETTINGS.pillagerOutpost,
-      idPrefix: "bedrock-pillager-outpost",
-      name: "統合版 ピリジャー前哨基地候補",
-      note,
-      edition: "bedrock",
-    }),
-    ...detectStructureCandidates({
-      seed: bedrockSeed,
-      centerX,
-      centerZ,
-      radius,
-      settings: JAVA_STRUCTURE_SETTINGS.ancientCity,
-      idPrefix: "bedrock-ancient-city",
-      name: "統合版 古代都市候補",
-      note,
-      edition: "bedrock",
-    }),
-    ...detectStructureCandidates({
-      seed: bedrockSeed,
-      centerX,
-      centerZ,
-      radius,
-      settings: JAVA_STRUCTURE_SETTINGS.trialChambers,
-      idPrefix: "bedrock-trial-chambers",
-      name: "統合版 トライアルチャンバー候補",
-      note,
-      edition: "bedrock",
-    }),
-  ];
-}
-
-function detectStructureCandidates({ seed, centerX, centerZ, radius, settings, idPrefix, name, note, edition = "java" }) {
+function detectRegionStructureCandidates({ seed, centerX, centerZ, radius, setting, edition, version }) {
   const centerChunkX = blockToChunk(centerX);
   const centerChunkZ = blockToChunk(centerZ);
   const minChunkX = centerChunkX - radius;
   const maxChunkX = centerChunkX + radius;
   const minChunkZ = centerChunkZ - radius;
   const maxChunkZ = centerChunkZ + radius;
-  const minRegionX = Math.floor(minChunkX / settings.spacing);
-  const maxRegionX = Math.floor(maxChunkX / settings.spacing);
-  const minRegionZ = Math.floor(minChunkZ / settings.spacing);
-  const maxRegionZ = Math.floor(maxChunkZ / settings.spacing);
+  const minRegionX = Math.floor(minChunkX / setting.spacing);
+  const maxRegionX = Math.floor(maxChunkX / setting.spacing);
+  const minRegionZ = Math.floor(minChunkZ / setting.spacing);
+  const maxRegionZ = Math.floor(maxChunkZ / setting.spacing);
   const candidates = [];
 
   for (let regionZ = minRegionZ; regionZ <= maxRegionZ; regionZ += 1) {
     for (let regionX = minRegionX; regionX <= maxRegionX; regionX += 1) {
-      const candidate = getRegionStructureCandidate(seed, regionX, regionZ, settings);
+      const candidate = getRegionStructureCandidate(seed, regionX, regionZ, setting);
       if (
         candidate.chunkX < minChunkX ||
         candidate.chunkX > maxChunkX ||
@@ -228,16 +171,25 @@ function detectStructureCandidates({ seed, centerX, centerZ, radius, settings, i
         continue;
       }
 
+      const biome = simpleTerrainProvider.getTerrainForChunk(seed, candidate.chunkX, candidate.chunkZ);
+      const confidence = getBiomeConfidence(setting, biome.id);
+      if (confidence === "除外") continue;
+      const reason = getCandidateReason(setting, confidence, biome);
+
       candidates.push(createStructureRecord({
-        id: `auto:${idPrefix}:${regionX}:${regionZ}`,
-        name,
-        type: settings.type,
+        id: `auto:${edition}:${setting.key}:${regionX}:${regionZ}`,
+        name: setting.name,
+        type: setting.type,
         x: candidate.x,
         z: candidate.z,
         dimension: STRUCTURE_DIMENSIONS.OVERWORLD,
         source: STRUCTURE_SOURCES.AUTO,
-        note,
+        note: "seedと疑似バイオームから推定した候補です。完全一致ではありません。",
         edition,
+        version,
+        confidence,
+        reason,
+        biome: biome.label,
       }));
     }
   }
@@ -245,15 +197,26 @@ function detectStructureCandidates({ seed, centerX, centerZ, radius, settings, i
   return candidates;
 }
 
+function getBiomeConfidence(setting, biomeId) {
+  if (setting.preferredBiomes.includes(biomeId)) return "高";
+  if (setting.nearbyBiomes?.includes(biomeId)) return "中";
+  if (setting.allowLow) return "低";
+  return "除外";
+}
+
+function getCandidateReason(setting, confidence, biome) {
+  if (confidence === "高") return `${setting.highReason} 疑似バイオーム: ${biome.label}`;
+  if (confidence === "中") return `${setting.mediumReason} 疑似バイオーム: ${biome.label}`;
+  return `現在は広域候補として表示しています。疑似バイオーム: ${biome.label}`;
+}
+
 function detectStrongholdCandidates({
   seed,
   centerX,
   centerZ,
   radius,
-  idPrefix = "stronghold",
-  name = "要塞候補",
-  note = `要塞は${CANDIDATE_NOTE}`,
   edition = "java",
+  version = "java-1.21",
 }) {
   const centerChunkX = blockToChunk(centerX);
   const centerChunkZ = blockToChunk(centerZ);
@@ -279,16 +242,21 @@ function detectStrongholdCandidates({
       chunkZ >= minChunkZ &&
       chunkZ <= maxChunkZ
     ) {
+      const biome = simpleTerrainProvider.getTerrainForChunk(seed, chunkX, chunkZ);
       candidates.push(createStructureRecord({
-        id: `auto:${idPrefix}:${index}`,
-        name,
+        id: `auto:${edition}:stronghold:${index}`,
+        name: edition === "bedrock" ? "統合版 要塞候補" : "要塞候補",
         type: STRUCTURE_TYPES.STRONGHOLD,
         x: chunkX * 16 + 8,
         z: chunkZ * 16 + 8,
         dimension: STRUCTURE_DIMENSIONS.OVERWORLD,
         source: STRUCTURE_SOURCES.AUTO,
-        note,
+        note: "要塞リングを元にした疑似候補です。完全一致ではありません。",
         edition,
+        version,
+        confidence: "中",
+        reason: `要塞リングに近い候補です。疑似バイオーム: ${biome.label}`,
+        biome: biome.label,
       }));
     }
 
@@ -307,18 +275,19 @@ function detectStrongholdCandidates({
   return candidates;
 }
 
-function getRegionStructureCandidate(seed, regionX, regionZ, settings) {
+function getRegionStructureCandidate(seed, regionX, regionZ, setting) {
   const random = createJavaRandom(
     BigInt(seed) +
     BigInt(regionX) * REGION_X_MULTIPLIER +
     BigInt(regionZ) * REGION_Z_MULTIPLIER +
-    settings.salt,
+    BigInt(hashStructureKey(setting.key)) +
+    setting.salt,
   );
-  const bound = settings.spacing - settings.separation;
+  const bound = Math.max(1, setting.spacing - setting.separation);
   const offsetX = random.nextInt(bound);
   const offsetZ = random.nextInt(bound);
-  const chunkX = regionX * settings.spacing + offsetX;
-  const chunkZ = regionZ * settings.spacing + offsetZ;
+  const chunkX = regionX * setting.spacing + offsetX;
+  const chunkZ = regionZ * setting.spacing + offsetZ;
 
   return {
     chunkX,
@@ -326,4 +295,18 @@ function getRegionStructureCandidate(seed, regionX, regionZ, settings) {
     x: chunkX * 16 + 8,
     z: chunkZ * 16 + 8,
   };
+}
+
+function hashStructureKey(key) {
+  let value = 0;
+  for (let index = 0; index < key.length; index += 1) {
+    value = (value * 31 + key.charCodeAt(index)) | 0;
+  }
+  return Math.abs(value);
+}
+
+function distanceSquared(record, x, z) {
+  const dx = record.x - x;
+  const dz = record.z - z;
+  return dx * dx + dz * dz;
 }

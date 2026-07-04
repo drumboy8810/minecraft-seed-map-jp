@@ -1,7 +1,7 @@
-import { getBiomeAt } from "./biome-provider.js?v=5.1.0";
-import { isSlimeChunkAt } from "./slime-provider.js?v=5.1.0";
-import { STRUCTURE_SOURCES, getCategoryColor, getCategorySymbol, normalizeStructureCategory } from "../structures/config.js?v=5.1.0";
-import { blockToChunk } from "../utils.js?v=5.1.0";
+import { getBiomeAt } from "./biome-provider.js?v=5.2.0";
+import { isSlimeChunkAt } from "./slime-provider.js?v=5.2.0";
+import { STRUCTURE_SOURCES, getCategoryColor, getCategorySymbol, normalizeStructureCategory } from "../structures/config.js?v=5.2.0";
+import { blockToChunk } from "../utils.js?v=5.2.0";
 
 const ZOOM_LEVELS = [
   { id: "overview", label: "広域", scale: 0.028, tile: 192 },
@@ -38,6 +38,7 @@ export class MapEngine {
     this.frameRequest = null;
     this.pendingFastRender = false;
     this.terrainCache = new Map();
+    this.hoveredStructureId = "";
     this.bindEvents();
     this.resize();
     this.requestRender();
@@ -227,6 +228,7 @@ export class MapEngine {
 
   drawStructures(structures) {
     const bounds = this.getBounds();
+    const scale = this.getScale();
     for (const structure of structures) {
       if (structure.x < bounds.minX || structure.x > bounds.maxX || structure.z < bounds.minZ || structure.z > bounds.maxZ) {
         continue;
@@ -236,23 +238,99 @@ export class MapEngine {
       const symbol = getCategorySymbol(category);
       const color = getCategoryColor(category);
       const isAuto = structure.source === STRUCTURE_SOURCES.AUTO;
+      const iconSize = Math.max(15, Math.min(26, 14 + scale * 26));
+      const isHovered = structure.id === this.hoveredStructureId;
       this.ctx.save();
-      this.ctx.beginPath();
-      this.ctx.arc(point.x, point.y, isAuto ? 9 : 8, 0, Math.PI * 2);
-      this.ctx.fillStyle = color;
-      this.ctx.fill();
-      this.ctx.lineWidth = isAuto ? 2 : 1;
-      this.ctx.strokeStyle = isAuto ? "#f6fff2" : "#101510";
-      this.ctx.setLineDash(isAuto ? [3, 2] : []);
-      this.ctx.stroke();
-      this.ctx.setLineDash([]);
-      this.ctx.fillStyle = "#0d180c";
-      this.ctx.font = "700 9px sans-serif";
-      this.ctx.textAlign = "center";
-      this.ctx.textBaseline = "middle";
-      this.ctx.fillText(symbol.slice(0, 1), point.x, point.y + 0.5);
+      this.drawStructureIcon(point.x, point.y, iconSize, category, symbol, color, isAuto, isHovered);
       this.ctx.restore();
     }
+  }
+
+  drawStructureIcon(x, y, size, category, symbol, color, isAuto, isHovered) {
+    const half = size / 2;
+    this.ctx.lineWidth = isHovered ? 3 : isAuto ? 2 : 1.5;
+    this.ctx.strokeStyle = isHovered ? "#ffffff" : isAuto ? "#f6fff2" : "#101510";
+    this.ctx.fillStyle = color;
+    this.ctx.setLineDash(isAuto ? [3, 2] : []);
+
+    if (category === "村") {
+      this.ctx.beginPath();
+      this.ctx.moveTo(x - half, y);
+      this.ctx.lineTo(x, y - half);
+      this.ctx.lineTo(x + half, y);
+      this.ctx.lineTo(x + half * 0.75, y + half);
+      this.ctx.lineTo(x - half * 0.75, y + half);
+      this.ctx.closePath();
+      this.ctx.fill();
+      this.ctx.stroke();
+    } else if (category === "廃ポータル") {
+      this.ctx.fillRect(x - half * 0.65, y - half, half * 1.3, size);
+      this.ctx.clearRect(x - half * 0.32, y - half * 0.55, half * 0.64, size * 0.68);
+      this.ctx.strokeRect(x - half * 0.65, y - half, half * 1.3, size);
+    } else if (category === "海底神殿") {
+      this.ctx.beginPath();
+      this.ctx.moveTo(x, y - half);
+      this.ctx.lineTo(x + half, y + half * 0.15);
+      this.ctx.lineTo(x + half * 0.55, y + half);
+      this.ctx.lineTo(x - half * 0.55, y + half);
+      this.ctx.lineTo(x - half, y + half * 0.15);
+      this.ctx.closePath();
+      this.ctx.fill();
+      this.ctx.stroke();
+    } else if (category === "森の洋館") {
+      this.ctx.fillRect(x - half, y - half * 0.35, size, half * 1.1);
+      this.ctx.beginPath();
+      this.ctx.moveTo(x - half, y - half * 0.35);
+      this.ctx.lineTo(x, y - half);
+      this.ctx.lineTo(x + half, y - half * 0.35);
+      this.ctx.stroke();
+      this.ctx.strokeRect(x - half, y - half * 0.35, size, half * 1.1);
+    } else if (category === "ピリジャー前哨基地") {
+      this.ctx.beginPath();
+      this.ctx.moveTo(x - half * 0.45, y + half);
+      this.ctx.lineTo(x - half * 0.45, y - half);
+      this.ctx.lineTo(x + half * 0.65, y - half * 0.62);
+      this.ctx.lineTo(x - half * 0.45, y - half * 0.24);
+      this.ctx.stroke();
+      this.ctx.fill();
+    } else if (category === "古代都市") {
+      this.ctx.beginPath();
+      this.ctx.moveTo(x - half, y + half);
+      this.ctx.lineTo(x - half * 0.6, y - half * 0.6);
+      this.ctx.lineTo(x, y);
+      this.ctx.lineTo(x + half * 0.6, y - half * 0.6);
+      this.ctx.lineTo(x + half, y + half);
+      this.ctx.closePath();
+      this.ctx.fill();
+      this.ctx.stroke();
+    } else if (category === "トライアルチャンバー") {
+      this.ctx.beginPath();
+      this.ctx.roundRect?.(x - half, y - half, size, size, 4);
+      if (!this.ctx.roundRect) this.ctx.rect(x - half, y - half, size, size);
+      this.ctx.fill();
+      this.ctx.stroke();
+    } else if (category === "要塞") {
+      this.ctx.beginPath();
+      this.ctx.moveTo(x, y - half);
+      this.ctx.lineTo(x + half, y);
+      this.ctx.lineTo(x, y + half);
+      this.ctx.lineTo(x - half, y);
+      this.ctx.closePath();
+      this.ctx.fill();
+      this.ctx.stroke();
+    } else {
+      this.ctx.beginPath();
+      this.ctx.arc(x, y, half, 0, Math.PI * 2);
+      this.ctx.fill();
+      this.ctx.stroke();
+    }
+
+    this.ctx.setLineDash([]);
+    this.ctx.fillStyle = "#0d180c";
+    this.ctx.font = `800 ${Math.max(9, Math.floor(size * 0.48))}px sans-serif`;
+    this.ctx.textAlign = "center";
+    this.ctx.textBaseline = "middle";
+    this.ctx.fillText(symbol.slice(0, 1), x, y + 0.5);
   }
 
   drawOriginMarker() {
@@ -307,7 +385,10 @@ export class MapEngine {
     });
 
     this.canvas.addEventListener("pointermove", (event) => {
-      if (!this.drag) return;
+      if (!this.drag) {
+        this.updateHoveredStructure(event);
+        return;
+      }
       const scale = this.getScale();
       const dx = event.clientX - this.drag.startX;
       const dy = event.clientY - this.drag.startY;
@@ -360,20 +441,24 @@ export class MapEngine {
     window.addEventListener("resize", () => this.requestRender());
   }
 
+  updateHoveredStructure(event) {
+    const rect = this.canvas.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+    const hit = this.getHitStructures(x, y)[0];
+    const nextId = hit?.id || "";
+    if (nextId === this.hoveredStructureId) return;
+    this.hoveredStructureId = nextId;
+    this.requestRender(true);
+  }
+
   handleClick(event) {
     const rect = this.canvas.getBoundingClientRect();
     const x = event.clientX - rect.left;
     const y = event.clientY - rect.top;
     const world = this.screenToWorld(x, y);
-    const markers = [...this.structures, ...this.manualMarkers]
-      .map((structure) => ({
-        structure,
-        point: this.worldToScreen(structure.x, structure.z),
-      }))
-      .filter((item) => Math.hypot(item.point.x - x, item.point.y - y) <= 14)
-      .sort((a, b) => Math.hypot(a.point.x - x, a.point.y - y) - Math.hypot(b.point.x - x, b.point.y - y))
-      .slice(0, 8)
-      .map((item) => item.structure);
+    const markers = this.getHitStructures(x, y)
+      .slice(0, 8);
 
     this.callbacks.onSelect?.({
       chunkX: blockToChunk(world.x),
@@ -382,5 +467,17 @@ export class MapEngine {
       blockZ: Math.round(world.z),
       markers,
     });
+  }
+
+  getHitStructures(x, y) {
+    const hitRadius = Math.max(16, Math.min(26, 14 + this.getScale() * 24));
+    return [...this.structures, ...this.manualMarkers]
+      .map((structure) => ({
+        structure,
+        point: this.worldToScreen(structure.x, structure.z),
+      }))
+      .filter((item) => Math.hypot(item.point.x - x, item.point.y - y) <= hitRadius)
+      .sort((a, b) => Math.hypot(a.point.x - x, a.point.y - y) - Math.hypot(b.point.x - x, b.point.y - y))
+      .map((item) => item.structure);
   }
 }

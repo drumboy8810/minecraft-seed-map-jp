@@ -1,4 +1,4 @@
-import { simpleTerrainProvider } from "../terrain/simple-terrain-provider.js?v=5.1.0";
+import { simpleTerrainProvider } from "../terrain/simple-terrain-provider.js?v=5.2.0";
 
 export function getBiomeAt(seed, edition, version, x, z) {
   const chunkX = Math.floor(x / 16);

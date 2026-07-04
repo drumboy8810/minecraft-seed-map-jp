@@ -1,10 +1,10 @@
-import { seedToJavaLong, isSlimeChunk } from "./slime.js?v=5.1.0";
-import { addMemo, clearMemos, deleteMemo, loadMemos } from "./storage.js?v=5.1.0";
-import { MapEngine } from "./map/map-engine.js?v=5.1.0";
-import { getStructuresInView } from "./map/structure-provider.js?v=5.1.0";
-import { getEditionLabel, getSourceLabel, getVisibleStructures } from "./structures/layer.js?v=5.1.0";
-import { STRUCTURE_CATEGORIES, getCategoryColor, normalizeStructureCategory } from "./structures/config.js?v=5.1.0";
-import { getTerrainProvider } from "./terrain.js?v=5.1.0";
+import { seedToJavaLong, isSlimeChunk } from "./slime.js?v=5.2.0";
+import { addMemo, clearMemos, deleteMemo, loadMemos } from "./storage.js?v=5.2.0";
+import { MapEngine } from "./map/map-engine.js?v=5.2.0";
+import { getStructureCacheStats, getStructuresInView } from "./map/structure-provider.js?v=5.2.0";
+import { getEditionLabel, getSourceLabel, getVisibleStructures } from "./structures/layer.js?v=5.2.0";
+import { STRUCTURE_CATEGORIES, getCategoryColor, normalizeStructureCategory } from "./structures/config.js?v=5.2.0";
+import { getTerrainProvider } from "./terrain.js?v=5.2.0";
 import {
   blockToChunk,
   convertNetherToOverworld,
@@ -12,7 +12,7 @@ import {
   copyText,
   formatChunkDetails,
   toInteger,
-} from "./utils.js?v=5.1.0";
+} from "./utils.js?v=5.2.0";
 
 const BEDROCK_CANDIDATE_MESSAGE = "統合版は候補表示対応です。Java版とは別扱いですが、現時点では簡易候補のため今後検証が必要です。";
 const VERSION_OPTIONS = {
@@ -381,8 +381,8 @@ function selectMapPoint(selection) {
     z: selectedChunk.z * 16 + 8,
   };
   const netherPoint = convertOverworldToNether(latestCenterPoint.x, latestCenterPoint.z);
-  const markerDetails = getMarkerDetailsFromMarkers(selection.markers || []);
-  const nearbyDetails = getNearbyStructureDetails(selectedChunk);
+  const markerDetails = getSelectedMarkerDetails(selection.markers || []);
+  const nearbyDetails = getNearbyCandidateDetails(selectedChunk);
   if (elements.details) {
     elements.details.innerHTML = `
       <div><dt>チャンク座標</dt><dd>${details.chunkText}</dd></div>
@@ -416,6 +416,55 @@ function clearSelectedChunk() {
       <div><dt>判定</dt><dd>-</dd></div>
     `;
   }
+}
+
+function getSelectedMarkerDetails(markers) {
+  if (!markers.length) return "";
+
+  const markerItems = markers
+    .map((marker) => `
+      <article class="marker-detail">
+        <h3>${escapeHtml(marker.name || marker.title)}</h3>
+        <p>${escapeHtml(normalizeCategory(marker.type))} / ${escapeHtml(getSourceLabel(marker.source))} / ${escapeHtml(getEditionLabel(marker.edition))} / X=${marker.x}, Z=${marker.z}</p>
+        ${marker.confidence ? `<p>候補精度: ${escapeHtml(marker.confidence)}</p>` : ""}
+        ${marker.reason ? `<p>候補理由: ${escapeHtml(marker.reason)}</p>` : ""}
+        ${marker.version ? `<p>対象: ${escapeHtml(marker.version)}</p>` : ""}
+        <p>${escapeHtml(marker.note || marker.body || "メモ本文なし")}</p>
+      </article>
+    `)
+    .join("");
+
+  return `<div><dt>クリック地点のマーカー</dt><dd>${markerItems}</dd></div>`;
+}
+
+function getNearbyCandidateDetails(chunk) {
+  const chunkCenterX = chunk.x * 16 + 8;
+  const chunkCenterZ = chunk.z * 16 + 8;
+  const nearbyStructures = getVisibleStructureRecords()
+    .map((structure) => ({
+      ...structure,
+      distance: Math.hypot(structure.x - chunkCenterX, structure.z - chunkCenterZ),
+    }))
+    .filter((structure) => structure.distance <= 768)
+    .sort((a, b) => a.distance - b.distance)
+    .slice(0, 10);
+
+  if (!nearbyStructures.length) {
+    return '<div><dt>近くの構造物候補</dt><dd>表示中の範囲には近くの候補がありません。</dd></div>';
+  }
+
+  const items = nearbyStructures.map((structure) => `
+    <article class="marker-detail">
+      <h3>${escapeHtml(structure.name || structure.title)}</h3>
+      <p>${escapeHtml(normalizeCategory(structure.type))} / ${escapeHtml(getSourceLabel(structure.source))} / ${escapeHtml(getEditionLabel(structure.edition))}</p>
+      <p>X=${structure.x}, Z=${structure.z} / 約${Math.round(structure.distance)}ブロック</p>
+      ${structure.confidence ? `<p>候補精度: ${escapeHtml(structure.confidence)}</p>` : ""}
+      ${structure.reason ? `<p>候補理由: ${escapeHtml(structure.reason)}</p>` : ""}
+      ${structure.version ? `<p>対象: ${escapeHtml(structure.version)}</p>` : ""}
+    </article>
+  `).join("");
+
+  return `<div><dt>近くの構造物候補</dt><dd>${items}</dd></div>`;
 }
 
 function convertCoordinates() {
@@ -507,7 +556,7 @@ function updateMapEngine() {
       origin: isChecked(elements.centerMarkerLayerToggle),
     },
   });
-  updateStructureCandidateStatus({
+  updateStructureCandidateStatusV52({
     autoVisible: autoStructures.length,
     manualVisible: manualMarkers.length,
   });
@@ -625,6 +674,36 @@ function getVisibleManualMarkers() {
     showManual: isChecked(elements.manualMarkerLayerToggle),
     showAuto: false,
   });
+}
+
+function updateStructureCandidateStatusV52(stats = { autoVisible: 0, manualVisible: 0 }) {
+  if (!elements.structureCandidateStatus) return;
+  const autoDetected = latestAutoStructures.length;
+  const autoLayerOn = isChecked(elements.autoStructureLayerToggle);
+  const visibleAuto = stats.autoVisible || 0;
+  const visibleManual = stats.manualVisible || 0;
+  const cacheStats = getStructureCacheStats();
+
+  if (!autoLayerOn) {
+    elements.structureCandidateStatus.textContent = `構造物候補: ${autoDetected}件検出 / 自動候補レイヤーOFF / キャッシュ ${cacheStats.cachedAreas}範囲`;
+    elements.structureCandidateStatus.classList.toggle("is-empty", true);
+    return;
+  }
+
+  if (!autoDetected) {
+    elements.structureCandidateStatus.textContent = `構造物候補: 表示範囲内に候補がありません / 手動マーカー ${visibleManual}件 / キャッシュ ${cacheStats.cachedAreas}範囲`;
+    elements.structureCandidateStatus.classList.toggle("is-empty", true);
+    return;
+  }
+
+  if (!visibleAuto) {
+    elements.structureCandidateStatus.textContent = `構造物候補: ${autoDetected}件検出 / フィルタ後 0件 / 手動マーカー ${visibleManual}件 / キャッシュ ${cacheStats.cachedAreas}範囲`;
+    elements.structureCandidateStatus.classList.toggle("is-empty", true);
+    return;
+  }
+
+  elements.structureCandidateStatus.textContent = `構造物候補: ${autoDetected}件検出 / 表示中 ${visibleAuto}件 / 手動マーカー ${visibleManual}件 / キャッシュ ${cacheStats.cachedAreas}範囲`;
+  elements.structureCandidateStatus.classList.toggle("is-empty", false);
 }
 
 function updateStructureCandidateStatus(stats = { autoVisible: 0, manualVisible: 0 }) {

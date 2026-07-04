@@ -547,7 +547,7 @@ function applyMemoMarkers() {
     grid: elements.grid,
     structures: visibleStructures,
   });
-  updateStructureCandidateStatus(stats);
+  updateStructureCandidateStatus(stats, visibleStructures);
 }
 
 function getMarkerDetails(button) {
@@ -620,7 +620,7 @@ function getVisibleStructureRecords() {
   });
 }
 
-function updateStructureCandidateStatus(stats = { autoVisible: 0, manualVisible: 0 }) {
+function updateStructureCandidateStatus(stats = { autoVisible: 0, manualVisible: 0 }, visibleStructures = []) {
   if (!elements.structureCandidateStatus) {
     return;
   }
@@ -628,6 +628,8 @@ function updateStructureCandidateStatus(stats = { autoVisible: 0, manualVisible:
   const autoLayerOn = isChecked(elements.autoStructureLayerToggle);
   const visibleAuto = stats.autoVisible || 0;
   const visibleManual = stats.manualVisible || 0;
+  const autoInCurrentGrid = countAutoStructuresInCurrentGrid(latestAutoStructures);
+  const autoAfterFiltersInCurrentGrid = countAutoStructuresInCurrentGrid(visibleStructures);
 
   if (!autoLayerOn) {
     elements.structureCandidateStatus.textContent = `構造物候補: ${autoDetected}件検出 / 自動候補レイヤーOFF`;
@@ -635,12 +637,14 @@ function updateStructureCandidateStatus(stats = { autoVisible: 0, manualVisible:
     return;
   }
 
-  if (!autoDetected || !visibleAuto) {
+  if (!autoDetected || !autoInCurrentGrid) {
     elements.structureCandidateStatus.textContent = `構造物候補: ${autoDetected}件検出 / 表示範囲内に候補がありません / 手動マーカー ${visibleManual}件`;
     elements.structureCandidateStatus.classList.toggle("is-empty", true);
-    if (DEBUG_STRUCTURE_LAYER && autoDetected > 0) {
+    if (DEBUG_STRUCTURE_LAYER && autoDetected > 0 && autoInCurrentGrid > 0 && visibleAuto === 0) {
       console.warn("構造物候補: フィルタまたは表示範囲によりマップ上の自動候補が0件です。", {
         detected: autoDetected,
+        inCurrentGrid: autoInCurrentGrid,
+        afterFiltersInCurrentGrid: autoAfterFiltersInCurrentGrid,
         visibleAuto,
         visibleManual,
       });
@@ -648,8 +652,29 @@ function updateStructureCandidateStatus(stats = { autoVisible: 0, manualVisible:
     return;
   }
 
+  if (!visibleAuto) {
+    elements.structureCandidateStatus.textContent = `構造物候補: ${autoDetected}件検出 / フィルタ後 0件 / 手動マーカー ${visibleManual}件`;
+    elements.structureCandidateStatus.classList.toggle("is-empty", true);
+    return;
+  }
+
   elements.structureCandidateStatus.textContent = `構造物候補: ${autoDetected}件検出 / 表示中 ${visibleAuto}件 / 手動マーカー ${visibleManual}件`;
   elements.structureCandidateStatus.classList.toggle("is-empty", false);
+}
+
+function countAutoStructuresInCurrentGrid(structures) {
+  const gridChunks = new Set(
+    Array.from(elements.grid.querySelectorAll(".chunk-cell"))
+      .map((cell) => `${cell.dataset.x},${cell.dataset.z}`),
+  );
+  if (!gridChunks.size) {
+    return 0;
+  }
+
+  return structures.filter((structure) => (
+    structure.source === "auto" &&
+    gridChunks.has(`${blockToChunk(structure.x)},${blockToChunk(structure.z)}`)
+  )).length;
 }
 
 function applySlimeLayerDisplay() {

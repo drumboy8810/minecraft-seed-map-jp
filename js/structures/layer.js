@@ -2,9 +2,25 @@ import { blockToChunk } from "../utils.js";
 import {
   STRUCTURE_SOURCES,
   getCategoryColor,
-  getCategorySymbol,
   normalizeStructureCategory,
 } from "./config.js";
+
+const CATEGORY_SYMBOLS = {
+  "村": "村",
+  "要塞": "要",
+  "廃ポータル": "廃",
+  "海底神殿": "海",
+  "森の洋館": "森",
+  "ピリジャー前哨基地": "前",
+  "古代都市": "古",
+  "エンドポータル": "終",
+  "ネザー要塞": "ネ",
+  "砦の遺跡": "砦",
+  "エンドシティ": "都",
+  "トライアルチャンバー": "試",
+  "スポナー": "湧",
+  "その他": "他",
+};
 
 export function getVisibleStructures({
   manualStructures,
@@ -105,4 +121,8 @@ export function getEditionLabel(edition) {
     return "Java版";
   }
   return "共通";
+}
+
+function getCategorySymbol(category) {
+  return CATEGORY_SYMBOLS[normalizeStructureCategory(category)] || CATEGORY_SYMBOLS["その他"];
 }

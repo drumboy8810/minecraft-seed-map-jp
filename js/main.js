@@ -1,8 +1,8 @@
 import { seedToJavaLong, isSlimeChunk } from "./slime.js";
 import { addMemo, clearMemos, deleteMemo, loadMemos } from "./storage.js";
-import { detectStructures } from "./structures/detector.js";
-import { applyStructureLayer, getEditionLabel, getSourceLabel, getVisibleStructures } from "./structures/layer.js";
-import { getTerrainProvider } from "./terrain.js";
+import { detectStructures } from "./structures/detector.js?v=4.0.1";
+import { applyStructureLayer, getEditionLabel, getSourceLabel, getVisibleStructures } from "./structures/layer.js?v=4.0.1";
+import { getTerrainProvider } from "./terrain.js?v=4.0.1";
 import {
   blockToChunk,
   convertNetherToOverworld,

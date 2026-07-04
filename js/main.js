@@ -3,7 +3,7 @@ import { addMemo, clearMemos, deleteMemo, loadMemos } from "./storage.js?v=5.2.0
 import { MapEngine } from "./map/map-engine.js?v=5.2.0";
 import { getStructureCacheStats, getStructuresInView } from "./map/structure-provider.js?v=5.2.0";
 import { getEditionLabel, getSourceLabel, getVisibleStructures } from "./structures/layer.js?v=5.2.0";
-import { STRUCTURE_CATEGORIES, getCategoryColor, normalizeStructureCategory } from "./structures/config.js?v=5.2.0";
+import { STRUCTURE_CATEGORIES, getCategoryColor, getCategorySymbol, normalizeStructureCategory } from "./structures/config.js?v=5.2.0";
 import { getTerrainProvider } from "./terrain.js?v=5.2.0";
 import {
   blockToChunk,
@@ -78,6 +78,10 @@ const elements = {
   clearMemos: document.querySelector("#clear-memos-button"),
 };
 
+const NEARBY_SECTION_STORAGE_KEY = "minecraft-seed-map-jp:nearby-structures-open";
+const NEARBY_STRUCTURE_LIMIT = 10;
+const NEARBY_STRUCTURE_DISTANCE = 768;
+
 let selectedChunk = null;
 let latestChunkCopyText = "";
 let latestCenterCopyText = "";
@@ -88,6 +92,8 @@ let latestWorldSeed = null;
 let latestEdition = "java";
 let latestVersion = "java-1.21";
 let mapEngine = null;
+let latestSelectedMarkers = [];
+let nearbyStructuresOpen = readNearbySectionState();
 
 if (elements.canvas) {
   mapEngine = new MapEngine(elements.canvas, {
@@ -169,6 +175,16 @@ elements.usePoint?.addEventListener("click", () => {
   if (elements.memoZ) elements.memoZ.value = String(latestCenterPoint.z);
   elements.memoTitle?.focus();
   setMessage("選択チャンクの中心座標を地点登録フォームに入れました。", "success");
+});
+
+elements.details?.addEventListener("click", (event) => {
+  const target = event.target;
+  if (!(target instanceof Element)) return;
+  const toggle = target.closest("[data-toggle-nearby-structures]");
+  if (!toggle) return;
+  nearbyStructuresOpen = !nearbyStructuresOpen;
+  writeNearbySectionState(nearbyStructuresOpen);
+  renderSelectedChunkDetails();
 });
 
 elements.converterForm?.addEventListener("submit", (event) => {
@@ -371,6 +387,7 @@ function selectMapPoint(selection) {
     z: selection.chunkZ,
     isSlime: isSlimeChunk(latestWorldSeed || 0n, selection.chunkX, selection.chunkZ, latestEdition),
   };
+  latestSelectedMarkers = selection.markers || [];
 
   const details = formatChunkDetails(selectedChunk);
   latestChunkCopyText = details.chunkCopyText;
@@ -381,9 +398,9 @@ function selectMapPoint(selection) {
     z: selectedChunk.z * 16 + 8,
   };
   const netherPoint = convertOverworldToNether(latestCenterPoint.x, latestCenterPoint.z);
-  const markerDetails = getSelectedMarkerDetails(selection.markers || []);
-  const nearbyDetails = getNearbyCandidateDetails(selectedChunk);
-  if (elements.details) {
+  const markerDetails = "";
+  const nearbyDetails = "";
+  if (false && elements.details) {
     elements.details.innerHTML = `
       <div><dt>チャンク座標</dt><dd>${details.chunkText}</dd></div>
       <div><dt>ブロック範囲</dt><dd>${details.blockText}</dd></div>
@@ -394,6 +411,7 @@ function selectMapPoint(selection) {
       ${nearbyDetails}
     `;
   }
+  renderSelectedChunkDetails();
   setCopyButtonsDisabled(false);
   if (selectedChunk.isSlime && elements.memoType) {
     elements.memoType.value = "スポナー";
@@ -406,6 +424,7 @@ function clearSelectedChunk() {
   latestCenterCopyText = "";
   latestRangeCopyText = "";
   latestCenterPoint = null;
+  latestSelectedMarkers = [];
   setCopyButtonsDisabled(true);
   if (elements.details) {
     elements.details.innerHTML = `
@@ -416,6 +435,179 @@ function clearSelectedChunk() {
       <div><dt>判定</dt><dd>-</dd></div>
     `;
   }
+  renderEmptyDetails();
+}
+
+function renderEmptyDetails() {
+  if (!elements.details) return;
+  elements.details.innerHTML = `
+    <div class="detail-section">
+      <dt>選択地点</dt>
+      <dd>マップをクリックすると、チャンク座標と周辺情報を表示します。</dd>
+    </div>
+    <div class="detail-section">
+      <dt>判定情報</dt>
+      <dd>-</dd>
+    </div>
+    <div class="detail-section detail-section--nearby">
+      <dt>近くの構造物候補（0件）</dt>
+      <dd>候補はマップ選択後に確認できます。</dd>
+    </div>
+    <div class="detail-section">
+      <dt>メモ/マーカー</dt>
+      <dd>選択後に「この座標を地点登録に使う」から登録できます。</dd>
+    </div>
+  `;
+}
+
+function renderSelectedChunkDetails() {
+  if (!elements.details || !selectedChunk || !latestCenterPoint) return;
+
+  const details = formatChunkDetails(selectedChunk);
+  const netherPoint = convertOverworldToNether(latestCenterPoint.x, latestCenterPoint.z);
+  const terrainText = getSelectedTerrainText(selectedChunk);
+  const markerDetails = getSelectedMarkerDetailsV52(latestSelectedMarkers);
+  const nearbyDetails = getNearbyCandidateDetailsV52(selectedChunk);
+
+  elements.details.innerHTML = `
+    <div class="detail-section">
+      <dt>選択地点</dt>
+      <dd>
+        <dl class="detail-sublist">
+          <div><dt>チャンク座標</dt><dd>${details.chunkText}</dd></div>
+          <div><dt>ブロック範囲</dt><dd>${details.blockText}</dd></div>
+          <div><dt>中心ブロック座標</dt><dd>${details.centerText}</dd></div>
+          <div><dt>バイオーム/地形</dt><dd>${escapeHtml(terrainText)}</dd></div>
+        </dl>
+      </dd>
+    </div>
+    <div class="detail-section">
+      <dt>判定情報</dt>
+      <dd>
+        <dl class="detail-sublist">
+          <div><dt>スライムチャンク</dt><dd>${details.resultText}</dd></div>
+          <div><dt>ネザー座標</dt><dd>X=${netherPoint.x}, Z=${netherPoint.z}</dd></div>
+        </dl>
+      </dd>
+    </div>
+    ${nearbyDetails}
+    ${markerDetails}
+  `;
+}
+
+function getSelectedMarkerDetailsV52(markers) {
+  if (!markers.length) {
+    return `
+      <div class="detail-section">
+        <dt>メモ/マーカー</dt>
+        <dd>この地点に重なる手動マーカーや構造物候補はありません。</dd>
+      </div>
+    `;
+  }
+
+  const markerItems = markers.map((marker) => renderCompactStructureItem(marker, 0, true)).join("");
+  return `
+    <div class="detail-section">
+      <dt>メモ/マーカー</dt>
+      <dd><div class="nearby-list">${markerItems}</div></dd>
+    </div>
+  `;
+}
+
+function getNearbyCandidateDetailsV52(chunk) {
+  const chunkCenterX = chunk.x * 16 + 8;
+  const chunkCenterZ = chunk.z * 16 + 8;
+  const nearbyStructures = getVisibleStructureRecords()
+    .filter((structure) => structure.source === "auto")
+    .map((structure) => ({
+      ...structure,
+      distance: Math.hypot(structure.x - chunkCenterX, structure.z - chunkCenterZ),
+    }))
+    .filter((structure) => structure.distance <= NEARBY_STRUCTURE_DISTANCE)
+    .sort((a, b) => a.distance - b.distance);
+
+  const total = nearbyStructures.length;
+  const visibleItems = nearbyStructures.slice(0, NEARBY_STRUCTURE_LIMIT);
+  const hiddenCount = Math.max(0, total - visibleItems.length);
+  const expanded = nearbyStructuresOpen;
+  const buttonLabel = expanded ? "閉じる" : "開く";
+  const listHtml = total
+    ? visibleItems.map((structure) => renderCompactStructureItem(structure, structure.distance)).join("")
+    : '<p class="empty-state compact">近くの構造物候補はありません。</p>';
+  const moreHtml = hiddenCount
+    ? `<p class="nearby-more">他 ${hiddenCount}件は距離が遠いため省略しています。</p>`
+    : "";
+
+  return `
+    <div class="detail-section detail-section--nearby">
+      <dt>
+        <button class="nearby-toggle" type="button" data-toggle-nearby-structures aria-expanded="${expanded}">
+          <span>近くの構造物候補（${total}件）</span>
+          <span class="nearby-toggle__state">${buttonLabel}</span>
+        </button>
+      </dt>
+      <dd class="nearby-content" ${expanded ? "" : "hidden"}>
+        <div class="nearby-list">${listHtml}</div>
+        ${moreHtml}
+      </dd>
+    </div>
+  `;
+}
+
+function renderCompactStructureItem(structure, distance = 0, isSelectedMarker = false) {
+  const category = normalizeCategory(structure.type);
+  const symbol = getCategorySymbol(category);
+  const color = getCategoryColor(category);
+  const confidence = structure.confidence || (structure.source === "auto" ? "中" : "-");
+  const confidenceClass = getConfidenceClass(confidence);
+  const distanceText = isSelectedMarker ? "クリック地点" : `約${Math.round(distance)}ブロック`;
+  const sourceText = getSourceLabel(structure.source);
+  const editionText = getEditionLabel(structure.edition);
+
+  return `
+    <article class="nearby-item" style="--marker-color: ${color}">
+      <span class="nearby-icon" aria-hidden="true">${escapeHtml(symbol)}</span>
+      <div class="nearby-item__body">
+        <h3>${escapeHtml(structure.name || structure.title || category)}</h3>
+        <p>${escapeHtml(distanceText)} / X=${structure.x}, Z=${structure.z}</p>
+        <p>${escapeHtml(sourceText)} / ${escapeHtml(editionText)}</p>
+        <span class="confidence-pill ${confidenceClass}">候補精度: ${escapeHtml(confidence)}</span>
+      </div>
+    </article>
+  `;
+}
+
+function getSelectedTerrainText(chunk) {
+  const provider = getTerrainProvider(getValue(elements.terrainMode, "simple"));
+  if (!provider?.isAvailable || typeof provider.getTerrainForChunk !== "function") {
+    return "詳細バイオーム準備中";
+  }
+  const terrain = provider.getTerrainForChunk(latestWorldSeed ?? 0n, chunk.x, chunk.z);
+  return getTerrainLabel(terrain);
+}
+
+function getTerrainLabel(terrain) {
+  const labels = {
+    plains: "草原",
+    forest: "森",
+    dark_forest: "暗い森",
+    desert: "砂漠",
+    snow: "雪原",
+    ocean: "海",
+    river: "川",
+    mountains: "山岳",
+    swamp: "湿地",
+    savanna: "サバンナ",
+    jungle: "ジャングル風",
+    badlands: "荒野風",
+  };
+  return labels[terrain?.id] || terrain?.label || "簡易地形";
+}
+
+function getConfidenceClass(confidence) {
+  if (confidence === "高") return "is-high";
+  if (confidence === "低") return "is-low";
+  return "is-medium";
 }
 
 function getSelectedMarkerDetails(markers) {
@@ -820,6 +1012,22 @@ function isChecked(element, fallback = true) {
 
 function getValue(element, fallback = "") {
   return element ? String(element.value ?? "") : fallback;
+}
+
+function readNearbySectionState() {
+  try {
+    return localStorage.getItem(NEARBY_SECTION_STORAGE_KEY) === "true";
+  } catch {
+    return false;
+  }
+}
+
+function writeNearbySectionState(value) {
+  try {
+    localStorage.setItem(NEARBY_SECTION_STORAGE_KEY, value ? "true" : "false");
+  } catch {
+    // localStorageが使えない環境でも折りたたみ表示自体は継続します。
+  }
 }
 
 function normalizeCategory(category) {

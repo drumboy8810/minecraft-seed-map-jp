@@ -17,7 +17,7 @@ import {
   toInteger,
 } from "./utils.js?v=7.0.0";
 
-const BEDROCK_CANDIDATE_MESSAGE = "Bedrock正確生成は未対応です。プレビュー生成を選んだ場合のみ、実ワールドと一致しない疑似表示を行います。";
+const BEDROCK_CANDIDATE_MESSAGE = "Bedrockモードはズレ調査用です。provider名、生成根拠、座標を右側詳細で確認できます。";
 const VERSION_OPTIONS = {
   java: [
     ["java-1.21", "1.21"],
@@ -163,7 +163,7 @@ elements.reset?.addEventListener("click", () => {
 elements.edition?.addEventListener("change", () => {
   const edition = getValue(elements.edition, "java");
   renderVersionOptions(edition);
-  renderPrecisionModeOptions(edition, getValue(elements.precisionMode, "accurate"));
+  renderPrecisionModeOptions(edition, getValue(elements.precisionMode, edition === "bedrock" ? "bedrock" : "accurate"));
   updateVersionNote();
   regenerateMapIfReady("エディションを切り替えて再描画しました。");
 });
@@ -175,7 +175,7 @@ elements.version?.addEventListener("change", () => {
 
 elements.precisionMode?.addEventListener("change", async () => {
   latestPrecisionMode = normalizePrecisionMode(getValue(elements.precisionMode, latestPrecisionMode));
-  if (getValue(elements.edition, "java") === "java" && getValue(elements.precisionMode, "preview") === "accurate") {
+  if (getValue(elements.edition, "java") === "java" && latestPrecisionMode === "accurate") {
     await loadAccurateProviders();
   }
   updateLayerToggleLabels();
@@ -334,7 +334,7 @@ elements.terrainMode?.addEventListener("change", () => {
 });
 
 renderVersionOptions(getValue(elements.edition, "java"), getValue(elements.version, "java-1.21"));
-renderPrecisionModeOptions(getValue(elements.edition, "java"), getValue(elements.precisionMode, "accurate"));
+renderPrecisionModeOptions(getValue(elements.edition, "java"), getValue(elements.precisionMode, getValue(elements.edition, "java") === "bedrock" ? "bedrock" : "accurate"));
 renderCategoryFilters();
 renderMemoTypeOptions();
 updateLayerToggleLabels();
@@ -375,7 +375,7 @@ function generateMap(successMessage = "マップを生成しました。チャ�
   latestWorldSeed = worldSeed;
   latestEdition = edition;
   latestVersion = getValue(elements.version);
-  latestPrecisionMode = normalizePrecisionMode(getValue(elements.precisionMode, "accurate"));
+  latestPrecisionMode = normalizePrecisionMode(getValue(elements.precisionMode, edition === "bedrock" ? "bedrock" : "accurate"));
   latestAutoStructures = getStructuresInView({
     seed: worldSeed,
     edition,
@@ -410,10 +410,10 @@ function generateMap(successMessage = "マップを生成しました。チャ�
   updateTerrainModeStatus();
   const providerStatus = getProviderStatus({ mode: latestPrecisionMode, edition });
   setMessage(
-    providerStatus.unavailable || providerStatus.fallback
+    providerStatus.fallback
       ? providerStatus.message
       : (edition === "bedrock" ? BEDROCK_CANDIDATE_MESSAGE : successMessage),
-    providerStatus.unavailable || providerStatus.fallback ? "error" : "success",
+    providerStatus.fallback ? "" : "success",
   );
 }
 
@@ -605,8 +605,8 @@ function getCoordinateDebugDetails(chunk) {
 
 function getProviderDetails() {
   const status = getProviderStatus({ mode: latestPrecisionMode, edition: latestEdition });
-  const modeLabel = latestPrecisionMode === "accurate" ? "正確生成" : "プレビュー生成";
-  const activeLabel = status.activeMode === "accurate" ? "正確生成" : "プレビュー生成";
+  const modeLabel = getPrecisionModeLabel(latestPrecisionMode);
+  const activeLabel = getPrecisionModeLabel(status.activeMode);
 
   return `
     <div class="detail-section">
@@ -617,6 +617,8 @@ function getProviderDetails() {
           <div><dt>実行モード</dt><dd>${escapeHtml(activeLabel)}${status.fallback ? "（フォールバック）" : ""}</dd></div>
           <div><dt>バイオームprovider</dt><dd>${escapeHtml(status.biomeProviderName)} / ${escapeHtml(status.biomeProviderId)}</dd></div>
           <div><dt>構造物provider</dt><dd>${escapeHtml(status.structureProviderName)} / ${escapeHtml(status.structureProviderId)}</dd></div>
+          <div><dt>biome生成根拠</dt><dd>${escapeHtml(status.biomeStatus?.message || "未設定")}</dd></div>
+          <div><dt>structure生成根拠</dt><dd>${escapeHtml(status.structureStatus?.message || "未設定")}</dd></div>
           <div><dt>状態</dt><dd>${escapeHtml(status.message)}</dd></div>
         </dl>
       </dd>
@@ -665,7 +667,8 @@ function getNearbyCandidateDetailsV52(chunk) {
 }
 
 function getNearbyStructureTitle() {
-  return latestPrecisionMode === "preview" ? "近くの構造物プレビュー" : "近くの構造物";
+  const status = getProviderStatus({ mode: latestPrecisionMode, edition: latestEdition });
+  return status.activeMode === "accurate" ? "近くの構造物" : "近くの構造物プレビュー";
 }
 
 function renderCompactStructureItem(structure, distance = 0, isSelectedMarker = false) {
@@ -704,7 +707,9 @@ function getSelectedTerrainText(chunk) {
   const blockX = Number.isFinite(chunk.blockX) ? chunk.blockX : chunk.x * 16 + 8;
   const blockZ = Number.isFinite(chunk.blockZ) ? chunk.blockZ : chunk.z * 16 + 8;
   const terrain = getProviderBiomeAt(latestWorldSeed ?? 0n, latestEdition, latestVersion, blockX, blockZ, latestPrecisionMode);
-  return `${getTerrainLabel(terrain)} / biomeId=${escapePlainText(terrain?.id || terrain?.biomeId || "unknown")}`;
+  const providerText = terrain?.providerName || terrain?.provider || "provider未設定";
+  const basisText = terrain?.basis || "生成根拠未設定";
+  return `${getTerrainLabel(terrain)} / biomeId=${escapePlainText(terrain?.id || terrain?.biomeId || "unknown")} / ${escapePlainText(providerText)} / ${escapePlainText(basisText)}`;
 }
 
 function getTerrainLabel(terrain) {
@@ -1063,7 +1068,16 @@ function updateLayerToggleLabels() {
 }
 
 function getStructureLayerName() {
-  return latestPrecisionMode === "preview" ? "構造物プレビュー" : "正確構造物";
+  const status = getProviderStatus({ mode: latestPrecisionMode, edition: latestEdition });
+  if (status.activeMode === "bedrock") return "Bedrock構造物プレビュー";
+  return status.activeMode === "accurate" ? "正確構造物" : "高速プレビュー構造物";
+}
+
+function getPrecisionModeLabel(mode) {
+  const normalized = normalizePrecisionMode(mode);
+  if (normalized === "accurate") return "正確生成モード(Java)";
+  if (normalized === "bedrock") return "Bedrockモード";
+  return "高速プレビュー";
 }
 
 function setLayerLabel(input, text) {
@@ -1078,11 +1092,11 @@ function updateTerrainModeStatus() {
   const edition = getValue(elements.edition, latestEdition);
   const providerStatus = getProviderStatus({ mode, edition });
   elements.terrainModeStatus.textContent = provider.isAvailable
-    ? `${latestPrecisionMode === "accurate" ? "正確生成" : "プレビュー生成"} / ${providerStatus.message}`
+    ? `${getPrecisionModeLabel(mode)} / ${providerStatus.message}`
     : `${provider.unavailableMessage} / ${providerStatus.message}`;
-  elements.terrainModeStatus.classList.toggle("is-warning", !provider.isAvailable || providerStatus.fallback || providerStatus.unavailable);
-  if (!provider.isAvailable || providerStatus.fallback || providerStatus.unavailable) {
-    setMessage(providerStatus.fallback || providerStatus.unavailable ? providerStatus.message : provider.unavailableMessage, "error");
+  elements.terrainModeStatus.classList.toggle("is-warning", !provider.isAvailable || providerStatus.fallback);
+  if (!provider.isAvailable || providerStatus.fallback) {
+    setMessage(providerStatus.fallback ? providerStatus.message : provider.unavailableMessage, providerStatus.fallback ? "" : "error");
   }
 }
 
@@ -1092,10 +1106,6 @@ function renderTerrainLegend() {
     mode: normalizePrecisionMode(getValue(elements.precisionMode, latestPrecisionMode)),
     edition: getValue(elements.edition, latestEdition),
   });
-  if (providerStatus.unavailable) {
-    elements.terrainLegend.innerHTML = '<span>正確生成エンジン未導入のため、バイオーム凡例は表示していません。</span>';
-    return;
-  }
   const provider = getTerrainProvider(getValue(elements.terrainMode, "simple"));
   const terrainTypes = provider.getLegend();
   if (!terrainTypes.length) {

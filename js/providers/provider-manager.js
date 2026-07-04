@@ -1,5 +1,3 @@
-import { bedrockAccurateBiomeProvider } from "./bedrock-accurate-biome-provider.js?v=7.0.0";
-import { bedrockAccurateStructureProvider } from "./bedrock-accurate-structure-provider.js?v=7.0.0";
 import { javaAccurateBiomeProvider } from "./java-accurate-biome-provider.js?v=7.0.0";
 import { javaAccurateStructureProvider } from "./java-accurate-structure-provider.js?v=7.0.0";
 import { previewBiomeProvider } from "./preview-biome-provider.js?v=7.0.0";
@@ -8,76 +6,28 @@ import { previewStructureProvider } from "./preview-structure-provider.js?v=7.0.
 export const PRECISION_MODES = {
   PREVIEW: "preview",
   ACCURATE: "accurate",
+  BEDROCK: "bedrock",
 };
 
 let accurateLoadRequested = false;
 
-const unavailableBiomeProvider = {
-  id: "unavailable-biome",
-  label: "正確生成未対応",
-  isAvailable() {
-    return false;
-  },
-  getStatus() {
-    return {
-      ok: false,
-      message: "正確生成が未対応のため、バイオームは表示していません。",
-    };
-  },
-  getLegend() {
-    return [];
-  },
-  getBiomeAt() {
-    return {
-      id: "unavailable",
-      label: "正確生成未対応",
-      color: "#101510",
-      provider: "unavailable",
-    };
-  },
-  generateBiomeTiles() {
-    return [];
-  },
-};
-
-const unavailableStructureProvider = {
-  id: "unavailable-structure",
-  label: "正確生成未対応",
-  isAvailable() {
-    return false;
-  },
-  getStatus() {
-    return {
-      ok: false,
-      message: "正確生成が未対応のため、構造物は表示していません。",
-      cachedAreas: 0,
-    };
-  },
-  getStructuresInView() {
-    return [];
-  },
-  getCacheStats() {
-    return {
-      cachedAreas: 0,
-    };
-  },
-};
-
 export function getPrecisionModeOptions(edition = "java") {
   if (edition === "bedrock") {
     return [
-      ["accurate", "正確生成: Bedrock未対応"],
-      ["preview", "統合版: 候補表示のみ"],
+      ["bedrock", "Bedrockモード"],
+      ["preview", "高速プレビュー"],
     ];
   }
   return [
-    ["accurate", "正確生成: cubiomes WASM導入"],
-    ["preview", "プレビュー生成"],
+    ["accurate", "正確生成モード(Java)"],
+    ["preview", "高速プレビュー"],
   ];
 }
 
 export function normalizePrecisionMode(mode) {
-  return mode === PRECISION_MODES.ACCURATE ? PRECISION_MODES.ACCURATE : PRECISION_MODES.PREVIEW;
+  if (mode === PRECISION_MODES.ACCURATE || mode === "java-accurate") return PRECISION_MODES.ACCURATE;
+  if (mode === PRECISION_MODES.BEDROCK) return PRECISION_MODES.BEDROCK;
+  return PRECISION_MODES.PREVIEW;
 }
 
 export function getActiveProviders({ mode = "preview", edition = "java" } = {}) {
@@ -86,39 +36,27 @@ export function getActiveProviders({ mode = "preview", edition = "java" } = {}) 
     requestAccurateProviderLoad();
     const exactReady = javaAccurateBiomeProvider.isAvailable() && javaAccurateStructureProvider.isAvailable();
     return {
-      biomeProvider: exactReady ? javaAccurateBiomeProvider : unavailableBiomeProvider,
-      structureProvider: exactReady ? javaAccurateStructureProvider : unavailableStructureProvider,
+      biomeProvider: exactReady ? javaAccurateBiomeProvider : previewBiomeProvider,
+      structureProvider: exactReady ? javaAccurateStructureProvider : previewStructureProvider,
       requestedMode: precisionMode,
-      activeMode: PRECISION_MODES.ACCURATE,
-      fallback: false,
-      unavailable: !exactReady,
+      activeMode: exactReady ? PRECISION_MODES.ACCURATE : PRECISION_MODES.PREVIEW,
+      fallback: !exactReady,
+      unavailable: false,
       message: exactReady
         ? "正確生成: cubiomes WASMを利用中です。"
-        : "正確生成エンジン未導入: assets/wasm/cubiomes.wasm を配置してください。導入手順は tools/cubiomes-wasm/README.md を参照してください。疑似生成は表示していません。",
+        : "正確生成エンジン未導入: assets/wasm/cubiomes.wasm が未配置のため、高速プレビューへ自動フォールバックしています。",
     };
   }
 
-  if (edition === "bedrock") {
-    if (precisionMode === PRECISION_MODES.ACCURATE) {
-      return {
-        biomeProvider: bedrockAccurateBiomeProvider,
-        structureProvider: bedrockAccurateStructureProvider,
-        requestedMode: precisionMode,
-        activeMode: PRECISION_MODES.ACCURATE,
-        fallback: false,
-        unavailable: true,
-        message: "Bedrock正確生成は未対応です。実ワールド/Chunkbase照合用の地形・構造物は表示していません。",
-      };
-    }
-
+  if (precisionMode === PRECISION_MODES.BEDROCK) {
     return {
       biomeProvider: previewBiomeProvider,
       structureProvider: previewStructureProvider,
       requestedMode: precisionMode,
-      activeMode: PRECISION_MODES.PREVIEW,
+      activeMode: PRECISION_MODES.BEDROCK,
       fallback: false,
       unavailable: false,
-      message: "統合版プレビュー生成: 疑似生成です。実ワールド/Chunkbase比較用には使えません。",
+      message: "Bedrockモード: 現在はズレ調査用の疑似生成です。provider名、生成根拠、座標を右側詳細で確認できます。",
     };
   }
 
@@ -129,7 +67,7 @@ export function getActiveProviders({ mode = "preview", edition = "java" } = {}) 
     activeMode: PRECISION_MODES.PREVIEW,
     fallback: false,
     unavailable: false,
-    message: "プレビュー生成: 疑似生成を表示中です。実ワールド/Chunkbaseとの一致確認には使えません。",
+    message: "高速プレビュー: 疑似生成を表示中です。実ワールド/Chunkbaseとの一致確認には使えません。",
   };
 }
 

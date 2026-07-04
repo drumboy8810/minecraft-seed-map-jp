@@ -3,14 +3,14 @@ import { simpleTerrainProvider } from "../terrain/simple-terrain-provider.js?v=7
 export const simpleBiomeProvider = {
   id: "simple-biome",
   mode: "preview",
-  label: "プレビュー生成",
+  label: "高速プレビュー",
   isAvailable() {
     return true;
   },
   getStatus() {
     return {
       ok: true,
-      message: "プレビュー生成: 疑似バイオームを表示中です。実ワールド/Chunkbase比較用ではありません。",
+      message: "高速プレビュー: seed + chunk座標 + 簡易ノイズで疑似バイオームを表示中です。実ワールド/Chunkbase比較用ではありません。",
     };
   },
   getLegend() {
@@ -19,7 +19,14 @@ export const simpleBiomeProvider = {
   getBiomeAt(seed, edition, version, x, z) {
     const chunkX = Math.floor(x / 16);
     const chunkZ = Math.floor(z / 16);
-    return simpleTerrainProvider.getTerrainForChunk(seed, chunkX, chunkZ, edition, version);
+    const biome = simpleTerrainProvider.getTerrainForChunk(seed, chunkX, chunkZ, edition, version);
+    return {
+      ...biome,
+      providerId: "simple-biome",
+      providerName: edition === "bedrock" ? "Bedrockモード / 疑似バイオーム" : "高速プレビュー / 疑似バイオーム",
+      precisionMode: edition === "bedrock" ? "bedrock" : "preview",
+      basis: `seed + chunk(${chunkX}, ${chunkZ}) + ${edition}/${version} + 簡易ノイズ`,
+    };
   },
   generateBiomeTiles({ seed, edition, version, bounds, tileSize }) {
     const tiles = [];

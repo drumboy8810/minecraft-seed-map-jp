@@ -7,7 +7,7 @@ Bedrock Editionの正確なSeed Mapを実現するための調査・実装方針
 - Java Edition向けのcubiomesは、Bedrock Editionの正確生成エンジンとしては使えません。
 - Bedrock 1.21/最新版のバイオーム、地形、構造物は、Bedrock向けに別providerを実装する必要があります。
 - 疑似ノイズや現在のpreview providerでは、実ワールドやChunkbaseとの照合には使えません。
-- そのため、Bedrock正確生成が未実装の間は、通常表示で疑似バイオーム/疑似構造物を表示しません。
+- そのため、Bedrock正確生成が未実装の間は、Bedrockモードをズレ調査用として扱い、疑似バイオーム/疑似構造物のprovider名・生成根拠・座標を画面上に明示します。
 
 ## 実装予定provider
 
@@ -16,7 +16,7 @@ js/providers/bedrock-accurate-biome-provider.js
 js/providers/bedrock-accurate-structure-provider.js
 ```
 
-現時点ではどちらも未対応providerとして実装し、空の表示と未対応メッセージを返します。
+現時点では正確生成providerは未対応です。通常のBedrockモードでは高速プレビューproviderを使い、ズレの原因調査に必要なデバッグ情報を表示します。
 
 ## 優先対象
 
@@ -40,6 +40,6 @@ js/providers/bedrock-accurate-structure-provider.js
 
 ## UI方針
 
-- Bedrock正確生成未対応時は、地形・構造物を表示しない
-- preview生成を選んだ場合のみ、実用ではないデモとして疑似表示する
-- preview生成の結果を「候補」「正確」と呼ばない
+- Bedrockモードでは地図を非表示にせず、ズレ調査用の疑似表示を継続する
+- provider名、biome生成根拠、structure生成根拠、block/chunk/canvas座標を右側詳細で確認できるようにする
+- Bedrockモード/高速プレビューの結果を「正確」と呼ばない

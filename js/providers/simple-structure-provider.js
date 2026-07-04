@@ -6,14 +6,14 @@ const cache = new Map();
 export const simpleStructureProvider = {
   id: "simple-structure",
   mode: "preview",
-  label: "プレビュー生成",
+  label: "高速プレビュー",
   isAvailable() {
     return true;
   },
   getStatus() {
     return {
       ok: true,
-      message: "プレビュー生成: seedと疑似バイオームから構造物プレビューを表示中です。実ワールド/Chunkbase比較用ではありません。",
+      message: "高速プレビュー: seed、region座標、構造物種別、疑似バイオーム条件から構造物を表示中です。実ワールド/Chunkbase比較用ではありません。",
       cachedAreas: cache.size,
     };
   },
@@ -52,9 +52,9 @@ function annotateStructure(structure) {
   return {
     ...structure,
     providerId: "simple-structure",
-    providerName: "構造物プレビュー",
+    providerName: structure.edition === "bedrock" ? "Bedrockモード / 構造物プレビュー" : "高速プレビュー / 構造物",
     precisionMode: "preview",
-    basis: structure.reason || "seed + region座標 + 疑似バイオームによるプレビュー表示",
+    basis: structure.reason || `seed + region座標 + ${structure.type} + 疑似バイオームによるプレビュー表示`,
   };
 }
 

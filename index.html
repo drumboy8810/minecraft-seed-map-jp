@@ -43,8 +43,9 @@
           <label class="terrain-mode field">
             <span>精度モード</span>
             <select id="precision-mode-select">
-              <option value="accurate" selected>正確生成: cubiomes WASM導入</option>
-              <option value="preview">プレビュー生成</option>
+              <option value="accurate" selected>正確生成モード(Java)</option>
+              <option value="preview">高速プレビュー</option>
+              <option value="bedrock">Bedrockモード</option>
             </select>
           </label>
 
@@ -128,7 +129,7 @@
               <option value="realistic" disabled>リアル地形風: 未対応</option>
             </select>
           </label>
-          <p id="terrain-mode-status" class="layer-note">正確生成: エンジン未導入時は地形・構造物を表示しません。</p>
+          <p id="terrain-mode-status" class="layer-note">正確生成エンジン未導入時は高速プレビューへ自動フォールバックします。</p>
           <p id="version-note" class="layer-note">対象: Java版。1.21 / 1.20 / 1.19 / 1.18は現時点では同一候補ロジックです。</p>
         </section>
 
@@ -158,7 +159,7 @@
             構造物候補: 未生成
           </div>
           <p class="layer-note">ドラッグで移動、マウスホイールでズームできます。構造物候補はスライムチャンクON/OFFとは独立して表示されます。</p>
-          <p class="layer-note is-warning">プレビュー生成は疑似生成です。実ワールド/Chunkbase比較にはJava版の正確生成エンジン導入が必要です。</p>
+          <p class="layer-note is-warning">Bedrockモード/高速プレビューはズレ調査用の疑似生成です。実ワールド/Chunkbaseとの違いは右側詳細のprovider名・生成根拠・座標で確認してください。</p>
           <div id="terrain-legend" class="terrain-legend" aria-label="疑似バイオーム凡例"></div>
 
           <div class="map-scroll" aria-label="Seed Mapの表示領域">
@@ -201,9 +202,9 @@
           <div class="status-item"><span>ドラッグ移動 / ホイールズーム</span><strong class="status-badge done">対応済み</strong></div>
           <div class="status-item"><span>Java版スライムチャンク</span><strong class="status-badge done">対応済み</strong></div>
           <div class="status-item"><span>統合版スライムチャンク</span><strong class="status-badge candidate">検証中</strong></div>
-          <div class="status-item"><span>Java版構造物プレビュー</span><strong class="status-badge candidate">デモ</strong></div>
-          <div class="status-item"><span>統合版構造物プレビュー</span><strong class="status-badge candidate">デモ</strong></div>
-          <div class="status-item"><span>疑似バイオーム</span><strong class="status-badge candidate">プレビューのみ</strong></div>
+          <div class="status-item"><span>Java正確生成モード</span><strong class="status-badge preparing">WASM待ち</strong></div>
+          <div class="status-item"><span>高速プレビュー</span><strong class="status-badge candidate">利用可能</strong></div>
+          <div class="status-item"><span>Bedrockモード</span><strong class="status-badge candidate">ズレ調査</strong></div>
           <div class="status-item"><span>詳細バイオーム</span><strong class="status-badge preparing">WASM導入待ち</strong></div>
           <div class="status-item"><span>cubiomes WASM</span><strong class="status-badge preparing">未同梱</strong></div>
           <div class="status-item"><span>Java正確バイオーム</span><strong class="status-badge preparing">WASM待ち</strong></div>

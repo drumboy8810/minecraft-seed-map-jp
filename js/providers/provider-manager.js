@@ -1,0 +1,97 @@
+import { simpleBiomeProvider } from "./simple-biome-provider.js?v=6.0.0";
+import { simpleStructureProvider } from "./simple-structure-provider.js?v=6.0.0";
+import { cubiomesBiomeProvider } from "./cubiomes-biome-provider.js?v=6.0.0";
+import { cubiomesStructureProvider } from "./cubiomes-structure-provider.js?v=6.0.0";
+
+export const PRECISION_MODES = {
+  PREVIEW: "preview",
+  ACCURATE: "accurate",
+};
+
+export function getPrecisionModeOptions(edition = "java") {
+  if (edition === "bedrock") {
+    return [
+      ["preview", "統合版: 候補表示のみ"],
+      ["accurate", "正確生成: 未対応"],
+    ];
+  }
+  return [
+    ["preview", "高速プレビュー"],
+    ["accurate", "正確生成: Java版準備中"],
+  ];
+}
+
+export function normalizePrecisionMode(mode) {
+  return mode === PRECISION_MODES.ACCURATE ? PRECISION_MODES.ACCURATE : PRECISION_MODES.PREVIEW;
+}
+
+export function getActiveProviders({ mode = "preview", edition = "java" } = {}) {
+  const precisionMode = normalizePrecisionMode(mode);
+  if (precisionMode === PRECISION_MODES.ACCURATE && edition === "java") {
+    const exactReady = cubiomesBiomeProvider.isAvailable() && cubiomesStructureProvider.isAvailable();
+    return {
+      biomeProvider: exactReady ? cubiomesBiomeProvider : simpleBiomeProvider,
+      structureProvider: exactReady ? cubiomesStructureProvider : simpleStructureProvider,
+      requestedMode: precisionMode,
+      activeMode: exactReady ? PRECISION_MODES.ACCURATE : PRECISION_MODES.PREVIEW,
+      fallback: !exactReady,
+      message: exactReady
+        ? "正確生成: cubiomes WASMを利用中です。"
+        : "正確生成エンジン未導入: cubiomes WASM未配置のため高速プレビューで表示します。",
+    };
+  }
+
+  if (edition === "bedrock") {
+    return {
+      biomeProvider: simpleBiomeProvider,
+      structureProvider: simpleStructureProvider,
+      requestedMode: precisionMode,
+      activeMode: PRECISION_MODES.PREVIEW,
+      fallback: precisionMode === PRECISION_MODES.ACCURATE,
+      message: "統合版は候補表示のみです。正確生成エンジンは未対応です。",
+    };
+  }
+
+  return {
+    biomeProvider: simpleBiomeProvider,
+    structureProvider: simpleStructureProvider,
+    requestedMode: precisionMode,
+    activeMode: PRECISION_MODES.PREVIEW,
+    fallback: false,
+    message: "高速プレビュー: 疑似生成を表示中です。",
+  };
+}
+
+export function getBiomeAt(seed, edition, version, x, z, mode = "preview") {
+  const { biomeProvider } = getActiveProviders({ mode, edition });
+  return biomeProvider.getBiomeAt(seed, edition, version, x, z);
+}
+
+export function generateBiomeTiles({ seed, edition, version, bounds, tileSize, mode = "preview" }) {
+  const { biomeProvider } = getActiveProviders({ mode, edition });
+  return biomeProvider.generateBiomeTiles({ seed, edition, version, bounds, tileSize });
+}
+
+export function getStructuresInView({ seed, edition, version, centerX, centerZ, radius, mode = "preview" }) {
+  const { structureProvider } = getActiveProviders({ mode, edition });
+  return structureProvider.getStructuresInView({ seed, edition, version, centerX, centerZ, radius });
+}
+
+export function getProviderStatus({ mode = "preview", edition = "java" } = {}) {
+  const active = getActiveProviders({ mode, edition });
+  const biomeStatus = active.biomeProvider.getStatus();
+  const structureStatus = active.structureProvider.getStatus();
+  return {
+    ...active,
+    biomeStatus,
+    structureStatus,
+    message: active.message,
+  };
+}
+
+export function getStructureCacheStats({ mode = "preview", edition = "java" } = {}) {
+  const { structureProvider } = getActiveProviders({ mode, edition });
+  return typeof structureProvider.getCacheStats === "function"
+    ? structureProvider.getCacheStats()
+    : { cachedAreas: 0 };
+}

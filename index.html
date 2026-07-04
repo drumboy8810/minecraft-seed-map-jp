@@ -6,7 +6,7 @@
     <meta name="description" content="Minecraftのシード値から疑似バイオーム、スライムチャンク、構造物候補、地点メモを確認できる日本語の静的Seed Mapです。">
     <title>Minecraft Seed Map JP</title>
     <link rel="icon" href="assets/icons/favicon.svg" type="image/svg+xml">
-    <link rel="stylesheet" href="css/style.css?v=5.2.1">
+    <link rel="stylesheet" href="css/style.css?v=6.0.0">
   </head>
   <body>
     <header class="site-header">
@@ -38,6 +38,13 @@
             <select id="edition-select" name="edition">
               <option value="java" selected>Java版</option>
               <option value="bedrock">統合版</option>
+            </select>
+          </label>
+          <label class="terrain-mode field">
+            <span>精度モード</span>
+            <select id="precision-mode-select">
+              <option value="preview" selected>高速プレビュー</option>
+              <option value="accurate">正確生成: Java版準備中</option>
             </select>
           </label>
 
@@ -276,6 +283,6 @@
       <p>このツールは静的HTML/CSS/JavaScriptのみで動作します。正確なMinecraft生成結果やChunkbaseとの完全一致は保証していません。</p>
     </footer>
 
-    <script type="module" src="js/main.js?v=5.2.1"></script>
+    <script type="module" src="js/main.js?v=6.0.0"></script>
   </body>
 </html>

@@ -59,6 +59,36 @@ export function generateArea(seed, version, centerX, centerZ, radius) {
   return moduleInstance.generateArea(seed, version, centerX, centerZ, radius);
 }
 
+export function getStructuresInView(seed, version, centerX, centerZ, radius) {
+  if (!isAvailable()) {
+    return {
+      ok: false,
+      structures: [],
+      seed,
+      version,
+      centerX,
+      centerZ,
+      radius,
+      message: getUnavailableMessage(),
+    };
+  }
+
+  if (typeof moduleInstance.getStructuresInView !== "function") {
+    return {
+      ok: false,
+      structures: [],
+      seed,
+      version,
+      centerX,
+      centerZ,
+      radius,
+      message: "cubiomes構造物providerは未実装です。",
+    };
+  }
+
+  return moduleInstance.getStructuresInView(seed, version, centerX, centerZ, radius);
+}
+
 export function getStatus() {
   return {
     status,
@@ -69,5 +99,5 @@ export function getStatus() {
 }
 
 export function getUnavailableMessage() {
-  return "cubiomes WASM未配置です。現在は疑似バイオームのみ利用できます。";
+  return "cubiomes WASM未配置です。現在は高速プレビューのみ利用できます。";
 }

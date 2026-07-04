@@ -1,10 +1,11 @@
-import { seedToJavaLong, isSlimeChunk } from "./slime.js?v=5.2.0";
-import { addMemo, clearMemos, deleteMemo, loadMemos } from "./storage.js?v=5.2.0";
-import { MapEngine } from "./map/map-engine.js?v=5.2.0";
-import { getStructureCacheStats, getStructuresInView } from "./map/structure-provider.js?v=5.2.0";
-import { getEditionLabel, getSourceLabel, getVisibleStructures } from "./structures/layer.js?v=5.2.0";
-import { STRUCTURE_CATEGORIES, getCategoryColor, getCategorySymbol, normalizeStructureCategory } from "./structures/config.js?v=5.2.0";
-import { getTerrainProvider } from "./terrain.js?v=5.2.0";
+import { seedToJavaLong, isSlimeChunk } from "./slime.js?v=6.0.0";
+import { addMemo, clearMemos, deleteMemo, loadMemos } from "./storage.js?v=6.0.0";
+import { MapEngine } from "./map/map-engine.js?v=6.0.0";
+import { getStructureCacheStats, getStructuresInView } from "./map/structure-provider.js?v=6.0.0";
+import { getEditionLabel, getSourceLabel, getVisibleStructures } from "./structures/layer.js?v=6.0.0";
+import { STRUCTURE_CATEGORIES, getCategoryColor, getCategorySymbol, normalizeStructureCategory } from "./structures/config.js?v=6.0.0";
+import { getProviderStatus, getPrecisionModeOptions, normalizePrecisionMode } from "./providers/provider-manager.js?v=6.0.0";
+import { getTerrainProvider } from "./terrain.js?v=6.0.0";
 import {
   blockToChunk,
   convertNetherToOverworld,
@@ -12,7 +13,7 @@ import {
   copyText,
   formatChunkDetails,
   toInteger,
-} from "./utils.js?v=5.2.0";
+} from "./utils.js?v=6.0.0";
 
 const BEDROCK_CANDIDATE_MESSAGE = "統合版は候補表示対応です。Java版とは別扱いですが、現時点では簡易候補のため今後検証が必要です。";
 const VERSION_OPTIONS = {
@@ -47,6 +48,7 @@ const elements = {
   slimeLayerToggle: document.querySelector("#slime-layer-toggle"),
   terrainLayerToggle: document.querySelector("#terrain-layer-toggle"),
   terrainMode: document.querySelector("#terrain-mode-select"),
+  precisionMode: document.querySelector("#precision-mode-select"),
   terrainModeStatus: document.querySelector("#terrain-mode-status"),
   terrainLegend: document.querySelector("#terrain-legend"),
   autoStructureLayerToggle: document.querySelector("#auto-structure-layer-toggle"),
@@ -91,6 +93,7 @@ let latestAutoStructures = [];
 let latestWorldSeed = null;
 let latestEdition = "java";
 let latestVersion = "java-1.21";
+let latestPrecisionMode = "preview";
 let mapEngine = null;
 let latestSelectedMarkers = [];
 let nearbyStructuresOpen = readNearbySectionState();
@@ -145,6 +148,8 @@ elements.reset?.addEventListener("click", () => {
   latestWorldSeed = null;
   latestEdition = "java";
   latestVersion = "java-1.21";
+  latestPrecisionMode = "preview";
+  renderPrecisionModeOptions("java", "preview");
   updateMapEngine();
   setText(elements.summary, "条件を入力してマップを生成してください。");
   updateCenterStatus(null);
@@ -152,7 +157,9 @@ elements.reset?.addEventListener("click", () => {
 });
 
 elements.edition?.addEventListener("change", () => {
-  renderVersionOptions(getValue(elements.edition, "java"));
+  const edition = getValue(elements.edition, "java");
+  renderVersionOptions(edition);
+  renderPrecisionModeOptions(edition, getValue(elements.precisionMode, "preview"));
   updateVersionNote();
   regenerateMapIfReady("エディションを切り替えて再描画しました。");
 });
@@ -160,6 +167,11 @@ elements.edition?.addEventListener("change", () => {
 elements.version?.addEventListener("change", () => {
   updateVersionNote();
   regenerateMapIfReady("バージョンを切り替えて再描画しました。");
+});
+
+elements.precisionMode?.addEventListener("change", () => {
+  updateTerrainModeStatus();
+  regenerateMapIfReady("精度モードを切り替えて再描画しました。");
 });
 
 elements.copyChunk?.addEventListener("click", () => copySelectedText(latestChunkCopyText, "チャンク座標をコピーしました。"));
@@ -303,6 +315,7 @@ elements.terrainMode?.addEventListener("change", () => {
 });
 
 renderVersionOptions(getValue(elements.edition, "java"), getValue(elements.version, "java-1.21"));
+renderPrecisionModeOptions(getValue(elements.edition, "java"), getValue(elements.precisionMode, "preview"));
 renderCategoryFilters();
 renderMemoTypeOptions();
 updateLayerToggleLabels();
@@ -343,6 +356,7 @@ function generateMap(successMessage = "マップを生成しました。チャ�
   latestWorldSeed = worldSeed;
   latestEdition = edition;
   latestVersion = getValue(elements.version);
+  latestPrecisionMode = normalizePrecisionMode(getValue(elements.precisionMode, "preview"));
   latestAutoStructures = getStructuresInView({
     seed: worldSeed,
     edition,
@@ -350,6 +364,7 @@ function generateMap(successMessage = "マップを生成しました。チャ�
     centerX,
     centerZ,
     radius,
+    mode: latestPrecisionMode,
   });
 
   const centerChunkX = blockToChunk(centerX);
@@ -373,7 +388,9 @@ function generateMap(successMessage = "マップを生成しました。チャ�
     `${editionLabel} ${getSelectedVersionLabel()} / 中心チャンク X=${centerChunkX}, Z=${centerChunkZ} / ${diameter}×${diameter}${slimeNote}${structureNote}。${editionNote}`,
   );
   updateCenterStatus({ centerChunkX, centerChunkZ, centerX, centerZ });
-  setMessage(edition === "bedrock" ? BEDROCK_CANDIDATE_MESSAGE : successMessage, "success");
+  updateTerrainModeStatus();
+  const providerStatus = getProviderStatus({ mode: latestPrecisionMode, edition });
+  setMessage(providerStatus.fallback ? providerStatus.message : (edition === "bedrock" ? BEDROCK_CANDIDATE_MESSAGE : successMessage), providerStatus.fallback ? "error" : "success");
 }
 
 function regenerateMapIfReady(message) {
@@ -736,6 +753,7 @@ function updateMapEngine() {
     seed: latestWorldSeed ?? 0n,
     edition: latestEdition,
     version: latestVersion,
+    precisionMode: latestPrecisionMode,
     centerX: toInteger(getValue(elements.centerX)) ?? 0,
     centerZ: toInteger(getValue(elements.centerZ)) ?? 0,
     structures: autoStructures,
@@ -874,7 +892,7 @@ function updateStructureCandidateStatusV52(stats = { autoVisible: 0, manualVisib
   const autoLayerOn = isChecked(elements.autoStructureLayerToggle);
   const visibleAuto = stats.autoVisible || 0;
   const visibleManual = stats.manualVisible || 0;
-  const cacheStats = getStructureCacheStats();
+  const cacheStats = getStructureCacheStats({ mode: latestPrecisionMode, edition: latestEdition });
 
   if (!autoLayerOn) {
     elements.structureCandidateStatus.textContent = `構造物候補: ${autoDetected}件検出 / 自動候補レイヤーOFF / キャッシュ ${cacheStats.cachedAreas}範囲`;
@@ -943,12 +961,15 @@ function setLayerLabel(input, text) {
 function updateTerrainModeStatus() {
   if (!elements.terrainModeStatus) return;
   const provider = getTerrainProvider(getValue(elements.terrainMode, "simple"));
+  const mode = normalizePrecisionMode(getValue(elements.precisionMode, latestPrecisionMode));
+  const edition = getValue(elements.edition, latestEdition);
+  const providerStatus = getProviderStatus({ mode, edition });
   elements.terrainModeStatus.textContent = provider.isAvailable
-    ? "地形モード: 疑似バイオームを利用中"
-    : provider.unavailableMessage;
-  elements.terrainModeStatus.classList.toggle("is-warning", !provider.isAvailable);
-  if (!provider.isAvailable) {
-    setMessage(provider.unavailableMessage, "error");
+    ? `地形モード: 疑似バイオームを利用中 / ${providerStatus.message}`
+    : `${provider.unavailableMessage} / ${providerStatus.message}`;
+  elements.terrainModeStatus.classList.toggle("is-warning", !provider.isAvailable || providerStatus.fallback);
+  if (!provider.isAvailable || providerStatus.fallback) {
+    setMessage(providerStatus.fallback ? providerStatus.message : provider.unavailableMessage, "error");
   }
 }
 
@@ -974,6 +995,18 @@ function renderVersionOptions(edition, selectedValue) {
     .map(([value, label]) => `<option value="${value}">${label}</option>`)
     .join("");
   elements.version.value = nextValue;
+}
+
+function renderPrecisionModeOptions(edition, selectedValue = "preview") {
+  if (!elements.precisionMode) return;
+  const options = getPrecisionModeOptions(edition);
+  const fallbackValue = options[0][0];
+  const nextValue = options.some(([value]) => value === selectedValue) ? selectedValue : fallbackValue;
+  elements.precisionMode.innerHTML = options
+    .map(([value, label]) => `<option value="${value}">${escapeHtml(label)}</option>`)
+    .join("");
+  elements.precisionMode.value = nextValue;
+  latestPrecisionMode = normalizePrecisionMode(nextValue);
 }
 
 function getSelectedVersionLabel() {

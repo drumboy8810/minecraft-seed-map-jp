@@ -1,5 +1,5 @@
-import { createId } from "./utils.js?v=5.2.0";
-import { createStructureRecord, STRUCTURE_DIMENSIONS, STRUCTURE_SOURCES } from "./structures/config.js?v=5.2.0";
+import { createId } from "./utils.js?v=6.0.0";
+import { createStructureRecord, STRUCTURE_DIMENSIONS, STRUCTURE_SOURCES } from "./structures/config.js?v=6.0.0";
 
 const STORAGE_KEY = "minecraft-seed-map-jp:memos:v1";
 

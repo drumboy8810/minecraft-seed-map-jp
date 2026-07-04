@@ -1,7 +1,7 @@
-import { getBiomeAt } from "./biome-provider.js?v=5.2.0";
-import { isSlimeChunkAt } from "./slime-provider.js?v=5.2.0";
-import { STRUCTURE_SOURCES, getCategoryColor, getCategorySymbol, normalizeStructureCategory } from "../structures/config.js?v=5.2.0";
-import { blockToChunk } from "../utils.js?v=5.2.0";
+import { getBiomeAt } from "./biome-provider.js?v=6.0.0";
+import { isSlimeChunkAt } from "./slime-provider.js?v=6.0.0";
+import { STRUCTURE_SOURCES, getCategoryColor, getCategorySymbol, normalizeStructureCategory } from "../structures/config.js?v=6.0.0";
+import { blockToChunk } from "../utils.js?v=6.0.0";
 
 const ZOOM_LEVELS = [
   { id: "overview", label: "広域", scale: 0.028, tile: 192 },
@@ -24,6 +24,7 @@ export class MapEngine {
     this.seed = 0n;
     this.edition = "java";
     this.version = "java-1.21";
+    this.precisionMode = "preview";
     this.structures = [];
     this.manualMarkers = [];
     this.layers = {
@@ -166,11 +167,11 @@ export class MapEngine {
   }
 
   getCachedBiome(x, z, tile) {
-    const key = `${this.seed}:${this.edition}:${this.version}:${tile}:${x}:${z}`;
+    const key = `${this.seed}:${this.edition}:${this.version}:${this.precisionMode}:${tile}:${x}:${z}`;
     const cached = this.terrainCache.get(key);
     if (cached) return cached;
 
-    const biome = getBiomeAt(this.seed, this.edition, this.version, x, z);
+    const biome = getBiomeAt(this.seed, this.edition, this.version, x, z, this.precisionMode);
     this.terrainCache.set(key, biome);
     if (this.terrainCache.size > MAX_TERRAIN_CACHE) {
       const deleteCount = Math.ceil(MAX_TERRAIN_CACHE * 0.2);

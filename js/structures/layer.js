@@ -5,12 +5,19 @@ import {
   normalizeStructureCategory,
 } from "./config.js";
 
-export function getVisibleStructures({ manualStructures, autoStructures = [], activeCategories, showLayer }) {
-  if (!showLayer) {
-    return [];
-  }
+export function getVisibleStructures({
+  manualStructures,
+  autoStructures = [],
+  activeCategories,
+  showManual = true,
+  showAuto = true,
+}) {
+  const structures = [
+    ...(showManual ? manualStructures : []),
+    ...(showAuto ? autoStructures : []),
+  ];
 
-  return [...manualStructures, ...autoStructures].filter((structure) => {
+  return structures.filter((structure) => {
     const category = normalizeStructureCategory(structure.type);
     return activeCategories.has(category);
   });

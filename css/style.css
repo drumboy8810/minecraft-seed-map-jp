@@ -53,7 +53,7 @@ button:disabled {
 .site-header,
 .site-footer,
 .app-shell {
-  width: min(1180px, calc(100% - 32px));
+  width: min(1480px, calc(100% - 32px));
   margin: 0 auto;
 }
 
@@ -114,6 +114,8 @@ h2 {
 
 .app-shell {
   display: grid;
+  grid-template-columns: 330px minmax(0, 1fr);
+  align-items: start;
   gap: 18px;
 }
 
@@ -133,8 +135,26 @@ h2 {
   padding: 18px;
 }
 
+.control-panel {
+  position: sticky;
+  top: 16px;
+  grid-column: 1;
+  grid-row: span 4;
+}
+
+.map-layout,
+.status-panel,
+.converter-panel,
+.memo-panel {
+  grid-column: 2;
+}
+
 .panel-heading {
   margin-bottom: 16px;
+}
+
+.compact-heading {
+  margin: 18px 0 12px;
 }
 
 .panel-heading p {
@@ -154,6 +174,20 @@ h2 {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 14px;
+}
+
+.control-panel .form-grid {
+  grid-template-columns: 1fr;
+}
+
+.control-panel .span-2,
+.control-panel .action-row {
+  grid-column: span 1;
+}
+
+.control-panel .action-row {
+  align-items: stretch;
+  flex-direction: column;
 }
 
 .field {
@@ -271,6 +305,12 @@ h2 {
   font-size: 0.88rem;
 }
 
+.layer-controls {
+  margin-top: 18px;
+  padding-top: 2px;
+  border-top: 1px solid var(--line);
+}
+
 .legend span {
   display: inline-flex;
   align-items: center;
@@ -318,7 +358,12 @@ h2 {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  margin: 0 14px 12px 0;
+  margin: 0 10px 10px 0;
+  min-height: 34px;
+  padding: 7px 10px;
+  border: 1px solid #56634f;
+  border-radius: 6px;
+  background: var(--surface-3);
   color: var(--muted);
   font-size: 0.9rem;
   font-weight: 800;
@@ -340,10 +385,8 @@ h2 {
 }
 
 .terrain-mode {
-  display: inline-grid;
-  min-width: 220px;
-  margin: 0 14px 12px 0;
-  vertical-align: top;
+  display: grid;
+  margin: 4px 0 12px;
 }
 
 .terrain-legend {
@@ -409,9 +452,19 @@ h2 {
   background: linear-gradient(135deg, var(--slime-chunk), #3aa54b);
 }
 
+.chunk-grid.hide-slime .chunk-cell.is-slime {
+  background: var(--normal-chunk);
+}
+
 .chunk-cell.has-terrain.is-slime {
   background:
     linear-gradient(135deg, rgba(123, 220, 104, 0.84), rgba(58, 165, 75, 0.84)),
+    var(--terrain-color, var(--normal-chunk));
+}
+
+.chunk-grid.hide-slime .chunk-cell.has-terrain.is-slime {
+  background:
+    linear-gradient(0deg, rgba(13, 18, 13, 0.28), rgba(13, 18, 13, 0.28)),
     var(--terrain-color, var(--normal-chunk));
 }
 
@@ -681,6 +734,23 @@ h2 {
   .map-heading {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .app-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .control-panel,
+  .map-layout,
+  .status-panel,
+  .converter-panel,
+  .memo-panel {
+    grid-column: 1;
+  }
+
+  .control-panel {
+    position: static;
+    grid-row: auto;
   }
 
   .map-layout {

@@ -3,8 +3,8 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="Minecraftのシード値からチャンク、スライムチャンク、手動登録した構造物マーカーを確認できる日本語の静的Seed Mapです。">
-    <title>Minecraft Seed Map JP v2.9</title>
+    <meta name="description" content="Minecraftのシード値からチャンク、構造物候補、地形レイヤー、手動登録マーカーを確認できる日本語の静的Seed Mapです。">
+    <title>Minecraft Seed Map JP</title>
     <link rel="icon" href="assets/icons/favicon.svg" type="image/svg+xml">
     <link rel="stylesheet" href="css/style.css">
   </head>
@@ -12,8 +12,8 @@
     <header class="site-header">
       <div>
         <p class="eyebrow">外部通信なし / GitHub Pages対応</p>
-        <h1>Minecraft Seed Map JP v2.9</h1>
-        <p class="lead">シード値と座標からチャンクを確認し、スライムチャンク表示、簡易地形色分け、手動構造物マーカー、Java版の複数構造物候補と要塞候補を扱える日本語Seed Mapです。</p>
+        <h1>Minecraft Seed Map JP</h1>
+        <p class="lead">シード値と座標から、チャンク、構造物候補、地形レイヤー、手動マーカーをまとめて確認できる日本語Seed Mapです。</p>
       </div>
       <div class="privacy-badge" aria-label="プライバシー方針">
         入力内容は外部送信されません
@@ -37,17 +37,17 @@
             <span>エディション</span>
             <select id="edition-select" name="edition">
               <option value="java" selected>Java版</option>
-              <option value="bedrock">統合版（v1.5実験的）</option>
+              <option value="bedrock">統合版</option>
             </select>
           </label>
 
           <label class="field">
             <span>バージョン</span>
             <select id="version-select" name="version">
-              <option value="java-1.20">Java 1.20+</option>
+              <option value="java-1.21">Java 1.21</option>
+              <option value="java-1.20">Java 1.20</option>
               <option value="java-1.19">Java 1.19</option>
               <option value="java-1.18">Java 1.18</option>
-              <option value="bedrock-latest">統合版 最新</option>
             </select>
           </label>
 
@@ -78,6 +78,38 @@
           </div>
         </form>
 
+        <section class="layer-controls" aria-labelledby="layer-controls-title">
+          <div class="panel-heading compact-heading">
+            <h2 id="layer-controls-title">レイヤー</h2>
+            <p>表示する情報をまとめて切り替えます。</p>
+          </div>
+          <label class="layer-toggle">
+            <input id="slime-layer-toggle" type="checkbox" checked>
+            <span>スライムチャンク: ON</span>
+          </label>
+          <label class="layer-toggle">
+            <input id="auto-structure-layer-toggle" type="checkbox" checked>
+            <span>構造物候補: ON</span>
+          </label>
+          <label class="layer-toggle">
+            <input id="manual-marker-layer-toggle" type="checkbox" checked>
+            <span>手動マーカー: ON</span>
+          </label>
+          <label class="layer-toggle">
+            <input id="terrain-layer-toggle" type="checkbox" checked>
+            <span>簡易地形: ON</span>
+          </label>
+          <label class="terrain-mode field">
+            <span>地形モード</span>
+            <select id="terrain-mode-select">
+              <option value="simple" selected>簡易地形</option>
+              <option value="cubiomes">詳細バイオーム：準備中</option>
+            </select>
+          </label>
+          <p id="terrain-mode-status" class="layer-note">現在の地形モード: 簡易地形</p>
+          <p id="version-note" class="layer-note">Java版 1.21 / 1.20 / 1.19 / 1.18 は現時点で同一候補ロジックです。</p>
+        </section>
+
         <div id="message" class="message" role="status" aria-live="polite"></div>
       </section>
 
@@ -100,23 +132,8 @@
             </div>
           </div>
 
-          <label class="layer-toggle">
-            <input id="terrain-layer-toggle" type="checkbox" checked>
-            <span>地形色分けレイヤー: ON</span>
-          </label>
-          <label class="terrain-mode field">
-            <span>地形モード</span>
-            <select id="terrain-mode-select">
-              <option value="simple" selected>簡易地形</option>
-              <option value="cubiomes">詳細バイオーム：WASM未配置</option>
-            </select>
-          </label>
-          <p id="terrain-mode-status" class="layer-note">現在の地形モード: 簡易地形</p>
-          <label class="layer-toggle">
-            <input id="structure-layer-toggle" type="checkbox" checked>
-            <span>構造物レイヤー: ON</span>
-          </label>
-          <p class="layer-note">手動登録した地点・構造物と、Java版の複数構造物自動候補をこのレイヤーに表示します。要塞は候補表示のため、実際の生成位置と異なる場合があります。</p>
+          <p class="layer-note">スライムチャンク、構造物候補、手動マーカー、簡易地形を個別レイヤーとして表示します。候補表示は実際の生成位置と異なる場合があります。</p>
+          <p class="layer-note is-warning">詳細バイオームは準備中です。cubiomes WASM未配置でもアプリは通常どおり動作します。</p>
           <div id="terrain-legend" class="terrain-legend" aria-label="簡易地形色分けの凡例"></div>
           <p class="layer-note">地形色分けはSeed値と座標から作る簡易表示です。実際のMinecraftバイオームとは異なる場合があります。</p>
 
@@ -167,10 +184,10 @@
         </div>
 
         <div class="status-grid" aria-label="機能ごとの対応状況">
-          <div class="status-item"><span>スライムチャンク</span><strong class="status-badge done">対応済み</strong></div>
-          <div class="status-item"><span>廃ポータル候補</span><strong class="status-badge candidate">候補表示</strong></div>
-          <div class="status-item"><span>村候補</span><strong class="status-badge candidate">候補表示</strong></div>
-          <div class="status-item"><span>海底神殿候補</span><strong class="status-badge candidate">候補表示</strong></div>
+          <div class="status-item"><span>Java版スライムチャンク</span><strong class="status-badge done">対応済み</strong></div>
+          <div class="status-item"><span>統合版スライムチャンク</span><strong class="status-badge candidate">候補表示</strong></div>
+          <div class="status-item"><span>Java版構造物候補</span><strong class="status-badge candidate">候補表示</strong></div>
+          <div class="status-item"><span>統合版構造物候補</span><strong class="status-badge candidate">候補表示</strong></div>
           <div class="status-item"><span>要塞候補</span><strong class="status-badge candidate">候補表示</strong></div>
           <div class="status-item"><span>森の洋館候補</span><strong class="status-badge candidate">候補表示</strong></div>
           <div class="status-item"><span>ピリジャー前哨基地候補</span><strong class="status-badge candidate">候補表示</strong></div>

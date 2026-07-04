@@ -14,6 +14,9 @@ const STRONGHOLD_COUNT = 128;
 const STRONGHOLD_DISTANCE_CHUNKS = 32;
 
 export function detectStructures({ seed, edition, centerX, centerZ, radius }) {
+  if (edition === "bedrock") {
+    return detectBedrockStructureCandidates({ seed, centerX, centerZ, radius });
+  }
   if (edition !== "java") {
     return [];
   }
@@ -100,6 +103,64 @@ export function detectStructures({ seed, edition, centerX, centerZ, radius }) {
 
 export function isStructureAutoDetectionAvailable() {
   return true;
+}
+
+function detectBedrockStructureCandidates({ seed, centerX, centerZ, radius }) {
+  const bedrockSeed = BigInt(seed) ^ 0x5bd1e995n;
+  const note = "統合版の構造物は候補表示のため、実際の生成位置と異なる場合があります。現時点では同一候補ロジックです。";
+
+  return [
+    ...detectStructureCandidates({
+      seed: bedrockSeed,
+      centerX,
+      centerZ,
+      radius,
+      settings: JAVA_STRUCTURE_SETTINGS.village,
+      idPrefix: "bedrock-village",
+      name: "統合版 村候補",
+      note,
+    }),
+    ...detectStructureCandidates({
+      seed: bedrockSeed,
+      centerX,
+      centerZ,
+      radius,
+      settings: JAVA_STRUCTURE_SETTINGS.ruinedPortal,
+      idPrefix: "bedrock-ruined-portal",
+      name: "統合版 廃ポータル候補",
+      note,
+    }),
+    ...detectStructureCandidates({
+      seed: bedrockSeed,
+      centerX,
+      centerZ,
+      radius,
+      settings: JAVA_STRUCTURE_SETTINGS.oceanMonument,
+      idPrefix: "bedrock-ocean-monument",
+      name: "統合版 海底神殿候補",
+      note,
+    }),
+    ...detectStructureCandidates({
+      seed: bedrockSeed,
+      centerX,
+      centerZ,
+      radius,
+      settings: JAVA_STRUCTURE_SETTINGS.woodlandMansion,
+      idPrefix: "bedrock-woodland-mansion",
+      name: "統合版 森の洋館候補",
+      note,
+    }),
+    ...detectStructureCandidates({
+      seed: bedrockSeed,
+      centerX,
+      centerZ,
+      radius,
+      settings: JAVA_STRUCTURE_SETTINGS.pillagerOutpost,
+      idPrefix: "bedrock-pillager-outpost",
+      name: "統合版 ピリジャー前哨基地候補",
+      note,
+    }),
+  ];
 }
 
 function detectStructureCandidates({ seed, centerX, centerZ, radius, settings, idPrefix, name, note }) {

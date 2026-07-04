@@ -427,6 +427,10 @@ h2 {
   cursor: grabbing;
 }
 
+.map-canvas.is-dragging {
+  cursor: grabbing;
+}
+
 .chunk-grid {
   display: grid;
   gap: 2px;

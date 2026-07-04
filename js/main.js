@@ -1,10 +1,10 @@
-import { seedToJavaLong, isSlimeChunk } from "./slime.js?v=5.0.1";
-import { addMemo, clearMemos, deleteMemo, loadMemos } from "./storage.js?v=5.0.1";
-import { MapEngine } from "./map/map-engine.js?v=5.0.1";
-import { getStructuresInView } from "./map/structure-provider.js?v=5.0.1";
-import { getEditionLabel, getSourceLabel, getVisibleStructures } from "./structures/layer.js?v=5.0.1";
-import { STRUCTURE_CATEGORIES, getCategoryColor, normalizeStructureCategory } from "./structures/config.js?v=5.0.1";
-import { getTerrainProvider } from "./terrain.js?v=5.0.1";
+import { seedToJavaLong, isSlimeChunk } from "./slime.js?v=5.1.0";
+import { addMemo, clearMemos, deleteMemo, loadMemos } from "./storage.js?v=5.1.0";
+import { MapEngine } from "./map/map-engine.js?v=5.1.0";
+import { getStructuresInView } from "./map/structure-provider.js?v=5.1.0";
+import { getEditionLabel, getSourceLabel, getVisibleStructures } from "./structures/layer.js?v=5.1.0";
+import { STRUCTURE_CATEGORIES, getCategoryColor, normalizeStructureCategory } from "./structures/config.js?v=5.1.0";
+import { getTerrainProvider } from "./terrain.js?v=5.1.0";
 import {
   blockToChunk,
   convertNetherToOverworld,
@@ -12,7 +12,7 @@ import {
   copyText,
   formatChunkDetails,
   toInteger,
-} from "./utils.js?v=5.0.1";
+} from "./utils.js?v=5.1.0";
 
 const BEDROCK_CANDIDATE_MESSAGE = "統合版は候補表示対応です。Java版とは別扱いですが、現時点では簡易候補のため今後検証が必要です。";
 const VERSION_OPTIONS = {
@@ -51,7 +51,9 @@ const elements = {
   terrainLegend: document.querySelector("#terrain-legend"),
   autoStructureLayerToggle: document.querySelector("#auto-structure-layer-toggle"),
   manualMarkerLayerToggle: document.querySelector("#manual-marker-layer-toggle"),
+  centerMarkerLayerToggle: document.querySelector("#center-marker-layer-toggle"),
   structureCandidateStatus: document.querySelector("#structure-candidate-status"),
+  zoomStatus: document.querySelector("#zoom-status"),
   versionNote: document.querySelector("#version-note"),
   details: document.querySelector("#chunk-details"),
   copyChunk: document.querySelector("#copy-chunk-button"),
@@ -104,9 +106,11 @@ if (elements.canvas) {
       }
     },
     onZoomChange(label) {
+      setText(elements.zoomStatus, `ズーム: ${label}`);
       setMessage(`ズーム: ${label}`, "success");
     },
   });
+  setText(elements.zoomStatus, `ズーム: ${mapEngine.getZoomStatus()}`);
 }
 
 elements.form?.addEventListener("submit", (event) => {
@@ -262,6 +266,11 @@ elements.autoStructureLayerToggle?.addEventListener("change", () => {
 });
 
 elements.manualMarkerLayerToggle?.addEventListener("change", () => {
+  updateLayerToggleLabels();
+  updateMapEngine();
+});
+
+elements.centerMarkerLayerToggle?.addEventListener("change", () => {
   updateLayerToggleLabels();
   updateMapEngine();
 });
@@ -495,6 +504,7 @@ function updateMapEngine() {
       slime: isChecked(elements.slimeLayerToggle),
       structures: isChecked(elements.autoStructureLayerToggle),
       manual: isChecked(elements.manualMarkerLayerToggle),
+      origin: isChecked(elements.centerMarkerLayerToggle),
     },
   });
   updateStructureCandidateStatus({
@@ -650,6 +660,7 @@ function updateLayerToggleLabels() {
   setLayerLabel(elements.slimeLayerToggle, `スライムチャンク: ${isChecked(elements.slimeLayerToggle) ? "ON" : "OFF"}`);
   setLayerLabel(elements.autoStructureLayerToggle, `構造物候補: ${isChecked(elements.autoStructureLayerToggle) ? "ON" : "OFF"}`);
   setLayerLabel(elements.manualMarkerLayerToggle, `手動マーカー: ${isChecked(elements.manualMarkerLayerToggle) ? "ON" : "OFF"}`);
+  setLayerLabel(elements.centerMarkerLayerToggle, `中心地 0,0: ${isChecked(elements.centerMarkerLayerToggle) ? "ON" : "OFF"}`);
   setLayerLabel(elements.terrainLayerToggle, `疑似バイオーム: ${isChecked(elements.terrainLayerToggle) ? "ON" : "OFF"}`);
 }
 

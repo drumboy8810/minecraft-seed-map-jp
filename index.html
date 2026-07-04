@@ -98,6 +98,10 @@
             <span>手動マーカー: ON</span>
           </label>
           <label class="layer-toggle">
+            <input id="center-marker-layer-toggle" type="checkbox" checked>
+            <span>中心地 0,0: ON</span>
+          </label>
+          <label class="layer-toggle">
             <input id="terrain-layer-toggle" type="checkbox" checked>
             <span>疑似バイオーム: ON</span>
           </label>
@@ -122,6 +126,7 @@
               <h2 id="map-title">Seed Map</h2>
               <p id="map-summary">条件を入力してマップを生成してください。スライムチャンク表示は機能の1つです。</p>
               <p id="center-status" class="center-status">中心チャンク: - / 中心ブロック: -</p>
+              <p id="zoom-status" class="center-status">ズーム: 標準 / 10%</p>
             </div>
             <div class="legend" aria-label="凡例">
               <span><i class="legend-chip slime"></i>スライム</span>
@@ -271,6 +276,6 @@
       <p>このツールは静的HTML/CSS/JavaScriptのみで動作します。正確なMinecraft生成結果やChunkbaseとの完全一致は保証していません。</p>
     </footer>
 
-    <script type="module" src="js/main.js?v=5.0.1"></script>
+    <script type="module" src="js/main.js?v=5.1.0"></script>
   </body>
 </html>

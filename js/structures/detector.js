@@ -3,12 +3,15 @@ import {
   JAVA_STRUCTURE_SETTINGS,
   STRUCTURE_DIMENSIONS,
   STRUCTURE_SOURCES,
+  STRUCTURE_TYPES,
   createStructureRecord,
 } from "./config.js";
 import { createJavaRandom } from "./rng.js";
 
 const REGION_X_MULTIPLIER = 341873128712n;
 const REGION_Z_MULTIPLIER = 132897987541n;
+const STRONGHOLD_COUNT = 128;
+const STRONGHOLD_DISTANCE_CHUNKS = 32;
 
 export function detectStructures({ seed, edition, centerX, centerZ, radius }) {
   if (edition !== "java") {
@@ -16,6 +19,12 @@ export function detectStructures({ seed, edition, centerX, centerZ, radius }) {
   }
 
   return [
+    ...detectStrongholdCandidates({
+      seed,
+      centerX,
+      centerZ,
+      radius,
+    }),
     ...detectStructureCandidates({
       seed,
       centerX,
@@ -128,6 +137,58 @@ function detectStructureCandidates({ seed, centerX, centerZ, radius, settings, i
         source: STRUCTURE_SOURCES.AUTO,
         note,
       }));
+    }
+  }
+
+  return candidates;
+}
+
+function detectStrongholdCandidates({ seed, centerX, centerZ, radius }) {
+  const centerChunkX = blockToChunk(centerX);
+  const centerChunkZ = blockToChunk(centerZ);
+  const minChunkX = centerChunkX - radius;
+  const maxChunkX = centerChunkX + radius;
+  const minChunkZ = centerChunkZ - radius;
+  const maxChunkZ = centerChunkZ + radius;
+  const candidates = [];
+  const random = createJavaRandom(seed);
+  let angle = random.nextDouble() * Math.PI * 2;
+  let ring = 0;
+  let ringPosition = 0;
+  let ringCount = 3;
+
+  for (let index = 0; index < STRONGHOLD_COUNT; index += 1) {
+    const distance = (4 * ring + 4 + random.nextDouble() * 6) * STRONGHOLD_DISTANCE_CHUNKS;
+    const chunkX = Math.round(Math.cos(angle) * distance);
+    const chunkZ = Math.round(Math.sin(angle) * distance);
+
+    if (
+      chunkX >= minChunkX &&
+      chunkX <= maxChunkX &&
+      chunkZ >= minChunkZ &&
+      chunkZ <= maxChunkZ
+    ) {
+      candidates.push(createStructureRecord({
+        id: `auto:stronghold:${index}`,
+        name: "要塞候補",
+        type: STRUCTURE_TYPES.STRONGHOLD,
+        x: chunkX * 16 + 8,
+        z: chunkZ * 16 + 8,
+        dimension: STRUCTURE_DIMENSIONS.OVERWORLD,
+        source: STRUCTURE_SOURCES.AUTO,
+        note: "要塞は候補表示のため、実際の生成位置と異なる場合があります。",
+      }));
+    }
+
+    angle += (Math.PI * 2) / ringCount;
+    ringPosition += 1;
+
+    if (ringPosition === ringCount) {
+      ring += 1;
+      ringPosition = 0;
+      ringCount += Math.floor((2 * ringCount) / (ring + 1));
+      ringCount = Math.min(ringCount, STRONGHOLD_COUNT - index - 1);
+      angle += random.nextDouble() * Math.PI * 2;
     }
   }
 

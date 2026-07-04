@@ -304,6 +304,11 @@ h2 {
   background: var(--warning);
 }
 
+.legend-chip.stronghold {
+  border: 2px solid #2d2410;
+  background: #e3bd64;
+}
+
 .legend-chip.candidate {
   border: 2px dashed var(--text);
   background: transparent;

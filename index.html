@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="Minecraftのシード値からチャンク、スライムチャンク、手動登録した構造物マーカーを確認できる日本語の静的Seed Mapです。">
-    <title>Minecraft Seed Map JP v2.8</title>
+    <title>Minecraft Seed Map JP v2.9</title>
     <link rel="icon" href="assets/icons/favicon.svg" type="image/svg+xml">
     <link rel="stylesheet" href="css/style.css">
   </head>
@@ -12,8 +12,8 @@
     <header class="site-header">
       <div>
         <p class="eyebrow">外部通信なし / GitHub Pages対応</p>
-        <h1>Minecraft Seed Map JP v2.8</h1>
-        <p class="lead">シード値と座標からチャンクを確認し、スライムチャンク表示、簡易地形色分け、手動構造物マーカー、Java版の複数構造物候補を扱える日本語Seed Mapです。</p>
+        <h1>Minecraft Seed Map JP v2.9</h1>
+        <p class="lead">シード値と座標からチャンクを確認し、スライムチャンク表示、簡易地形色分け、手動構造物マーカー、Java版の複数構造物候補と要塞候補を扱える日本語Seed Mapです。</p>
       </div>
       <div class="privacy-badge" aria-label="プライバシー方針">
         入力内容は外部送信されません
@@ -95,6 +95,7 @@
               <span><i class="legend-chip center"></i>中心付近</span>
               <span><i class="legend-chip structure"></i>構造物</span>
               <span><i class="legend-chip auto-structure"></i>自動候補</span>
+              <span><i class="legend-chip stronghold"></i>要塞候補</span>
               <span><i class="legend-chip candidate"></i>候補表示</span>
             </div>
           </div>
@@ -115,7 +116,7 @@
             <input id="structure-layer-toggle" type="checkbox" checked>
             <span>構造物レイヤー: ON</span>
           </label>
-          <p class="layer-note">手動登録した地点・構造物と、Java版の複数構造物自動候補をこのレイヤーに表示します。候補表示のため、実際の生成位置と異なる場合があります。</p>
+          <p class="layer-note">手動登録した地点・構造物と、Java版の複数構造物自動候補をこのレイヤーに表示します。要塞は候補表示のため、実際の生成位置と異なる場合があります。</p>
           <div id="terrain-legend" class="terrain-legend" aria-label="簡易地形色分けの凡例"></div>
           <p class="layer-note">地形色分けはSeed値と座標から作る簡易表示です。実際のMinecraftバイオームとは異なる場合があります。</p>
 
@@ -170,13 +171,13 @@
           <div class="status-item"><span>廃ポータル候補</span><strong class="status-badge candidate">候補表示</strong></div>
           <div class="status-item"><span>村候補</span><strong class="status-badge candidate">候補表示</strong></div>
           <div class="status-item"><span>海底神殿候補</span><strong class="status-badge candidate">候補表示</strong></div>
+          <div class="status-item"><span>要塞候補</span><strong class="status-badge candidate">候補表示</strong></div>
           <div class="status-item"><span>森の洋館候補</span><strong class="status-badge candidate">候補表示</strong></div>
           <div class="status-item"><span>ピリジャー前哨基地候補</span><strong class="status-badge candidate">候補表示</strong></div>
           <div class="status-item"><span>古代都市候補</span><strong class="status-badge candidate">候補表示</strong></div>
           <div class="status-item"><span>トライアルチャンバー候補</span><strong class="status-badge candidate">候補表示</strong></div>
           <div class="status-item"><span>簡易地形</span><strong class="status-badge done">対応済み</strong></div>
           <div class="status-item"><span>詳細バイオーム</span><strong class="status-badge preparing">準備中</strong></div>
-          <div class="status-item"><span>要塞</span><strong class="status-badge unsupported">未対応</strong></div>
           <div class="status-item"><span>ネザー要塞</span><strong class="status-badge unsupported">未対応</strong></div>
           <div class="status-item"><span>エンドシティ</span><strong class="status-badge unsupported">未対応</strong></div>
         </div>

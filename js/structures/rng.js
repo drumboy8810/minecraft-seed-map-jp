@@ -26,5 +26,8 @@ export function createJavaRandom(seed) {
       } while (bits - value + (bound - 1) < 0);
       return value;
     },
+    nextDouble() {
+      return (this.next(26) * 2 ** 27 + this.next(27)) / 2 ** 53;
+    },
   };
 }

@@ -6,14 +6,14 @@ const cache = new Map();
 export const simpleStructureProvider = {
   id: "simple-structure",
   mode: "preview",
-  label: "高速プレビュー",
+  label: "プレビュー生成",
   isAvailable() {
     return true;
   },
   getStatus() {
     return {
       ok: true,
-      message: "高速プレビュー: seedと疑似バイオームから構造物候補を表示中です。",
+      message: "プレビュー生成: seedと疑似バイオームから構造物プレビューを表示中です。実ワールド/Chunkbase比較用ではありません。",
       cachedAreas: cache.size,
     };
   },
@@ -52,9 +52,9 @@ function annotateStructure(structure) {
   return {
     ...structure,
     providerId: "simple-structure",
-    providerName: "高速プレビュー候補",
+    providerName: "構造物プレビュー",
     precisionMode: "preview",
-    basis: structure.reason || "seed + region座標 + 疑似バイオームによる候補表示",
+    basis: structure.reason || "seed + region座標 + 疑似バイオームによるプレビュー表示",
   };
 }
 

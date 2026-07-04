@@ -3,14 +3,14 @@ import { simpleTerrainProvider } from "../terrain/simple-terrain-provider.js?v=7
 export const simpleBiomeProvider = {
   id: "simple-biome",
   mode: "preview",
-  label: "高速プレビュー",
+  label: "プレビュー生成",
   isAvailable() {
     return true;
   },
   getStatus() {
     return {
       ok: true,
-      message: "高速プレビュー: 疑似バイオームを表示中です。",
+      message: "プレビュー生成: 疑似バイオームを表示中です。実ワールド/Chunkbase比較用ではありません。",
     };
   },
   getLegend() {

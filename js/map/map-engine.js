@@ -33,6 +33,8 @@ export class MapEngine {
       structures: true,
       manual: true,
       origin: true,
+      chunkGrid: false,
+      regionGrid: false,
     };
     this.drag = null;
     this.pixelRatio = 1;
@@ -47,7 +49,7 @@ export class MapEngine {
 
   setState(state) {
     Object.assign(this, state);
-    this.layers = { terrain: true, slime: true, structures: true, manual: true, origin: true, ...this.layers };
+    this.layers = { terrain: true, slime: true, structures: true, manual: true, origin: true, chunkGrid: false, regionGrid: false, ...this.layers };
     this.resize();
     this.requestRender();
   }
@@ -120,7 +122,8 @@ export class MapEngine {
     this.ctx.fillRect(0, 0, width, height);
 
     if (this.layers.terrain) this.drawTerrain(fast);
-    this.drawGrid(width, height);
+    if (this.layers.chunkGrid) this.drawGrid(width, height, 16, "rgba(235, 244, 224, 0.12)");
+    if (this.layers.regionGrid) this.drawGrid(width, height, 512, "rgba(255, 210, 120, 0.28)");
     if (!fast && this.layers.slime) this.drawSlimeChunks();
     if (this.layers.structures) this.drawStructures(this.structures);
     if (this.layers.manual) this.drawStructures(this.manualMarkers);
@@ -183,14 +186,15 @@ export class MapEngine {
     return biome;
   }
 
-  drawGrid(width, height) {
+  drawGrid(width, height, fixedStep = null, strokeStyle = "rgba(16, 21, 16, 0.38)") {
     const scale = this.getScale();
     const bounds = this.getBounds();
-    const gridStep = scale >= 0.4 ? 16 : scale >= 0.18 ? 32 : scale >= 0.08 ? 64 : 256;
+    const gridStep = fixedStep || (scale >= 0.4 ? 16 : scale >= 0.18 ? 32 : scale >= 0.08 ? 64 : 256);
+    if (gridStep === 16 && scale < 0.08) return;
     const startX = Math.floor(bounds.minX / gridStep) * gridStep;
     const startZ = Math.floor(bounds.minZ / gridStep) * gridStep;
     this.ctx.lineWidth = 1;
-    this.ctx.strokeStyle = "rgba(16, 21, 16, 0.38)";
+    this.ctx.strokeStyle = strokeStyle;
 
     for (let x = startX; x <= bounds.maxX; x += gridStep) {
       const point = this.worldToScreen(x, bounds.minZ);
@@ -466,6 +470,8 @@ export class MapEngine {
       chunkZ: blockToChunk(world.z),
       blockX: Math.round(world.x),
       blockZ: Math.round(world.z),
+      canvasX: Math.round(x),
+      canvasY: Math.round(y),
       markers,
     });
   }

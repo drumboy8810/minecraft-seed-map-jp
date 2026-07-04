@@ -17,7 +17,7 @@ import {
   toInteger,
 } from "./utils.js?v=7.0.0";
 
-const BEDROCK_CANDIDATE_MESSAGE = "統合版は候補表示対応です。Java版とは別扱いですが、現時点では簡易候補のため今後検証が必要です。";
+const BEDROCK_CANDIDATE_MESSAGE = "Bedrock正確生成は未対応です。プレビュー生成を選んだ場合のみ、実ワールドと一致しない疑似表示を行います。";
 const VERSION_OPTIONS = {
   java: [
     ["java-1.21", "1.21"],
@@ -49,6 +49,8 @@ const elements = {
   centerStatus: document.querySelector("#center-status"),
   slimeLayerToggle: document.querySelector("#slime-layer-toggle"),
   terrainLayerToggle: document.querySelector("#terrain-layer-toggle"),
+  chunkGridToggle: document.querySelector("#chunk-grid-toggle"),
+  regionGridToggle: document.querySelector("#region-grid-toggle"),
   terrainMode: document.querySelector("#terrain-mode-select"),
   precisionMode: document.querySelector("#precision-mode-select"),
   terrainModeStatus: document.querySelector("#terrain-mode-status"),
@@ -95,7 +97,7 @@ let latestAutoStructures = [];
 let latestWorldSeed = null;
 let latestEdition = "java";
 let latestVersion = "java-1.21";
-let latestPrecisionMode = "preview";
+let latestPrecisionMode = "accurate";
 let mapEngine = null;
 let latestSelectedMarkers = [];
 let nearbyStructuresOpen = readNearbySectionState();
@@ -150,8 +152,8 @@ elements.reset?.addEventListener("click", () => {
   latestWorldSeed = null;
   latestEdition = "java";
   latestVersion = "java-1.21";
-  latestPrecisionMode = "preview";
-  renderPrecisionModeOptions("java", "preview");
+  latestPrecisionMode = "accurate";
+  renderPrecisionModeOptions("java", "accurate");
   updateMapEngine();
   setText(elements.summary, "条件を入力してマップを生成してください。");
   updateCenterStatus(null);
@@ -161,7 +163,7 @@ elements.reset?.addEventListener("click", () => {
 elements.edition?.addEventListener("change", () => {
   const edition = getValue(elements.edition, "java");
   renderVersionOptions(edition);
-  renderPrecisionModeOptions(edition, getValue(elements.precisionMode, "preview"));
+  renderPrecisionModeOptions(edition, getValue(elements.precisionMode, "accurate"));
   updateVersionNote();
   regenerateMapIfReady("エディションを切り替えて再描画しました。");
 });
@@ -172,9 +174,11 @@ elements.version?.addEventListener("change", () => {
 });
 
 elements.precisionMode?.addEventListener("change", async () => {
+  latestPrecisionMode = normalizePrecisionMode(getValue(elements.precisionMode, latestPrecisionMode));
   if (getValue(elements.edition, "java") === "java" && getValue(elements.precisionMode, "preview") === "accurate") {
     await loadAccurateProviders();
   }
+  updateLayerToggleLabels();
   updateTerrainModeStatus();
   regenerateMapIfReady("精度モードを切り替えて再描画しました。");
 });
@@ -313,6 +317,16 @@ elements.terrainLayerToggle?.addEventListener("change", () => {
   updateMapEngine();
 });
 
+elements.chunkGridToggle?.addEventListener("change", () => {
+  updateLayerToggleLabels();
+  updateMapEngine();
+});
+
+elements.regionGridToggle?.addEventListener("change", () => {
+  updateLayerToggleLabels();
+  updateMapEngine();
+});
+
 elements.terrainMode?.addEventListener("change", () => {
   updateTerrainModeStatus();
   renderTerrainLegend();
@@ -320,7 +334,7 @@ elements.terrainMode?.addEventListener("change", () => {
 });
 
 renderVersionOptions(getValue(elements.edition, "java"), getValue(elements.version, "java-1.21"));
-renderPrecisionModeOptions(getValue(elements.edition, "java"), getValue(elements.precisionMode, "preview"));
+renderPrecisionModeOptions(getValue(elements.edition, "java"), getValue(elements.precisionMode, "accurate"));
 renderCategoryFilters();
 renderMemoTypeOptions();
 updateLayerToggleLabels();
@@ -361,7 +375,7 @@ function generateMap(successMessage = "マップを生成しました。チャ�
   latestWorldSeed = worldSeed;
   latestEdition = edition;
   latestVersion = getValue(elements.version);
-  latestPrecisionMode = normalizePrecisionMode(getValue(elements.precisionMode, "preview"));
+  latestPrecisionMode = normalizePrecisionMode(getValue(elements.precisionMode, "accurate"));
   latestAutoStructures = getStructuresInView({
     seed: worldSeed,
     edition,
@@ -395,7 +409,12 @@ function generateMap(successMessage = "マップを生成しました。チャ�
   updateCenterStatus({ centerChunkX, centerChunkZ, centerX, centerZ });
   updateTerrainModeStatus();
   const providerStatus = getProviderStatus({ mode: latestPrecisionMode, edition });
-  setMessage(providerStatus.fallback ? providerStatus.message : (edition === "bedrock" ? BEDROCK_CANDIDATE_MESSAGE : successMessage), providerStatus.fallback ? "error" : "success");
+  setMessage(
+    providerStatus.unavailable || providerStatus.fallback
+      ? providerStatus.message
+      : (edition === "bedrock" ? BEDROCK_CANDIDATE_MESSAGE : successMessage),
+    providerStatus.unavailable || providerStatus.fallback ? "error" : "success",
+  );
 }
 
 function regenerateMapIfReady(message) {
@@ -409,6 +428,8 @@ function selectMapPoint(selection) {
     z: selection.chunkZ,
     blockX: selection.blockX,
     blockZ: selection.blockZ,
+    canvasX: selection.canvasX,
+    canvasY: selection.canvasY,
     isSlime: isSlimeChunk(latestWorldSeed || 0n, selection.chunkX, selection.chunkZ, latestEdition),
   };
   latestSelectedMarkers = selection.markers || [];
@@ -487,8 +508,8 @@ function renderEmptyDetails() {
       <dd>-</dd>
     </div>
     <div class="detail-section detail-section--nearby">
-      <dt>近くの構造物候補（0件）</dt>
-      <dd>候補はマップ選択後に確認できます。</dd>
+      <dt>${getNearbyStructureTitle()}（0件）</dt>
+      <dd>マップ選択後に確認できます。</dd>
     </div>
     <div class="detail-section">
       <dt>メモ/マーカー</dt>
@@ -574,6 +595,7 @@ function getCoordinateDebugDetails(chunk) {
           <div><dt>block</dt><dd>X=${blockX}, Z=${blockZ}</dd></div>
           <div><dt>chunk</dt><dd>X=${chunkX}, Z=${chunkZ}</dd></div>
           <div><dt>region</dt><dd>X=${regionX}, Z=${regionZ}（32チャンク単位）</dd></div>
+          <div><dt>canvas</dt><dd>X=${Number.isFinite(chunk.canvasX) ? chunk.canvasX : "-"}, Y=${Number.isFinite(chunk.canvasY) ? chunk.canvasY : "-"}</dd></div>
           <div><dt>選択チャンクのregion</dt><dd>X=${structureRegionX}, Z=${structureRegionZ}</dd></div>
         </dl>
       </dd>
@@ -583,8 +605,8 @@ function getCoordinateDebugDetails(chunk) {
 
 function getProviderDetails() {
   const status = getProviderStatus({ mode: latestPrecisionMode, edition: latestEdition });
-  const modeLabel = latestPrecisionMode === "accurate" ? "正確生成" : "高速プレビュー";
-  const activeLabel = status.activeMode === "accurate" ? "正確生成" : "高速プレビュー";
+  const modeLabel = latestPrecisionMode === "accurate" ? "正確生成" : "プレビュー生成";
+  const activeLabel = status.activeMode === "accurate" ? "正確生成" : "プレビュー生成";
 
   return `
     <div class="detail-section">
@@ -621,7 +643,7 @@ function getNearbyCandidateDetailsV52(chunk) {
   const buttonLabel = expanded ? "閉じる" : "開く";
   const listHtml = total
     ? visibleItems.map((structure) => renderCompactStructureItem(structure, structure.distance)).join("")
-    : '<p class="empty-state compact">近くの構造物候補はありません。</p>';
+    : `<p class="empty-state compact">${getNearbyStructureTitle()}はありません。</p>`;
   const moreHtml = hiddenCount
     ? `<p class="nearby-more">他 ${hiddenCount}件は距離が遠いため省略しています。</p>`
     : "";
@@ -630,7 +652,7 @@ function getNearbyCandidateDetailsV52(chunk) {
     <div class="detail-section detail-section--nearby">
       <dt>
         <button class="nearby-toggle" type="button" data-toggle-nearby-structures aria-expanded="${expanded}">
-          <span>近くの構造物候補（${total}件）</span>
+          <span>${getNearbyStructureTitle()}（${total}件）</span>
           <span class="nearby-toggle__state">${buttonLabel}</span>
         </button>
       </dt>
@@ -640,6 +662,10 @@ function getNearbyCandidateDetailsV52(chunk) {
       </dd>
     </div>
   `;
+}
+
+function getNearbyStructureTitle() {
+  return latestPrecisionMode === "preview" ? "近くの構造物プレビュー" : "近くの構造物";
 }
 
 function renderCompactStructureItem(structure, distance = 0, isSelectedMarker = false) {
@@ -653,6 +679,10 @@ function renderCompactStructureItem(structure, distance = 0, isSelectedMarker = 
   const editionText = getEditionLabel(structure.edition);
   const providerText = structure.providerName || (structure.providerId ? structure.providerId : "provider未設定");
   const basisText = structure.basis || structure.reason || "生成根拠未設定";
+  const structureChunkX = blockToChunk(structure.x);
+  const structureChunkZ = blockToChunk(structure.z);
+  const structureRegionX = blockToRegion(structure.x);
+  const structureRegionZ = blockToRegion(structure.z);
 
   return `
     <article class="nearby-item" style="--marker-color: ${color}">
@@ -660,6 +690,7 @@ function renderCompactStructureItem(structure, distance = 0, isSelectedMarker = 
       <div class="nearby-item__body">
         <h3>${escapeHtml(structure.name || structure.title || category)}</h3>
         <p>${escapeHtml(distanceText)} / X=${structure.x}, Z=${structure.z}</p>
+        <p>chunk X=${structureChunkX}, Z=${structureChunkZ} / region X=${structureRegionX}, Z=${structureRegionZ}</p>
         <p>${escapeHtml(sourceText)} / ${escapeHtml(editionText)}</p>
         <p>${escapeHtml(providerText)}</p>
         <p>${escapeHtml(basisText)}</p>
@@ -837,6 +868,8 @@ function updateMapEngine() {
       structures: isChecked(elements.autoStructureLayerToggle),
       manual: isChecked(elements.manualMarkerLayerToggle),
       origin: isChecked(elements.centerMarkerLayerToggle),
+      chunkGrid: isChecked(elements.chunkGridToggle, false),
+      regionGrid: isChecked(elements.regionGridToggle, false),
     },
   });
   updateStructureCandidateStatusV52({
@@ -966,26 +999,27 @@ function updateStructureCandidateStatusV52(stats = { autoVisible: 0, manualVisib
   const visibleAuto = stats.autoVisible || 0;
   const visibleManual = stats.manualVisible || 0;
   const cacheStats = getStructureCacheStats({ mode: latestPrecisionMode, edition: latestEdition });
+  const layerName = getStructureLayerName();
 
   if (!autoLayerOn) {
-    elements.structureCandidateStatus.textContent = `構造物候補: ${autoDetected}件検出 / 自動候補レイヤーOFF / キャッシュ ${cacheStats.cachedAreas}範囲`;
+    elements.structureCandidateStatus.textContent = `${layerName}: ${autoDetected}件検出 / レイヤーOFF / キャッシュ ${cacheStats.cachedAreas}範囲`;
     elements.structureCandidateStatus.classList.toggle("is-empty", true);
     return;
   }
 
   if (!autoDetected) {
-    elements.structureCandidateStatus.textContent = `構造物候補: 表示範囲内に候補がありません / 手動マーカー ${visibleManual}件 / キャッシュ ${cacheStats.cachedAreas}範囲`;
+    elements.structureCandidateStatus.textContent = `${layerName}: 表示範囲内に表示できる構造物はありません / 手動マーカー ${visibleManual}件 / キャッシュ ${cacheStats.cachedAreas}範囲`;
     elements.structureCandidateStatus.classList.toggle("is-empty", true);
     return;
   }
 
   if (!visibleAuto) {
-    elements.structureCandidateStatus.textContent = `構造物候補: ${autoDetected}件検出 / フィルタ後 0件 / 手動マーカー ${visibleManual}件 / キャッシュ ${cacheStats.cachedAreas}範囲`;
+    elements.structureCandidateStatus.textContent = `${layerName}: ${autoDetected}件検出 / フィルタ後 0件 / 手動マーカー ${visibleManual}件 / キャッシュ ${cacheStats.cachedAreas}範囲`;
     elements.structureCandidateStatus.classList.toggle("is-empty", true);
     return;
   }
 
-  elements.structureCandidateStatus.textContent = `構造物候補: ${autoDetected}件検出 / 表示中 ${visibleAuto}件 / 手動マーカー ${visibleManual}件 / キャッシュ ${cacheStats.cachedAreas}範囲`;
+  elements.structureCandidateStatus.textContent = `${layerName}: ${autoDetected}件検出 / 表示中 ${visibleAuto}件 / 手動マーカー ${visibleManual}件 / キャッシュ ${cacheStats.cachedAreas}範囲`;
   elements.structureCandidateStatus.classList.toggle("is-empty", false);
 }
 
@@ -1020,10 +1054,16 @@ function updateStructureCandidateStatus(stats = { autoVisible: 0, manualVisible:
 
 function updateLayerToggleLabels() {
   setLayerLabel(elements.slimeLayerToggle, `スライムチャンク: ${isChecked(elements.slimeLayerToggle) ? "ON" : "OFF"}`);
-  setLayerLabel(elements.autoStructureLayerToggle, `構造物候補: ${isChecked(elements.autoStructureLayerToggle) ? "ON" : "OFF"}`);
+  setLayerLabel(elements.autoStructureLayerToggle, `${getStructureLayerName()}: ${isChecked(elements.autoStructureLayerToggle) ? "ON" : "OFF"}`);
   setLayerLabel(elements.manualMarkerLayerToggle, `手動マーカー: ${isChecked(elements.manualMarkerLayerToggle) ? "ON" : "OFF"}`);
   setLayerLabel(elements.centerMarkerLayerToggle, `中心地 0,0: ${isChecked(elements.centerMarkerLayerToggle) ? "ON" : "OFF"}`);
-  setLayerLabel(elements.terrainLayerToggle, `疑似バイオーム: ${isChecked(elements.terrainLayerToggle) ? "ON" : "OFF"}`);
+  setLayerLabel(elements.terrainLayerToggle, `バイオーム表示: ${isChecked(elements.terrainLayerToggle) ? "ON" : "OFF"}`);
+  setLayerLabel(elements.chunkGridToggle, `チャンク境界: ${isChecked(elements.chunkGridToggle, false) ? "ON" : "OFF"}`);
+  setLayerLabel(elements.regionGridToggle, `リージョン境界: ${isChecked(elements.regionGridToggle, false) ? "ON" : "OFF"}`);
+}
+
+function getStructureLayerName() {
+  return latestPrecisionMode === "preview" ? "構造物プレビュー" : "正確構造物";
 }
 
 function setLayerLabel(input, text) {
@@ -1038,16 +1078,24 @@ function updateTerrainModeStatus() {
   const edition = getValue(elements.edition, latestEdition);
   const providerStatus = getProviderStatus({ mode, edition });
   elements.terrainModeStatus.textContent = provider.isAvailable
-    ? `${latestPrecisionMode === "accurate" ? "正確生成" : "高速プレビュー"} / ${providerStatus.message}`
+    ? `${latestPrecisionMode === "accurate" ? "正確生成" : "プレビュー生成"} / ${providerStatus.message}`
     : `${provider.unavailableMessage} / ${providerStatus.message}`;
-  elements.terrainModeStatus.classList.toggle("is-warning", !provider.isAvailable || providerStatus.fallback);
-  if (!provider.isAvailable || providerStatus.fallback) {
-    setMessage(providerStatus.fallback ? providerStatus.message : provider.unavailableMessage, "error");
+  elements.terrainModeStatus.classList.toggle("is-warning", !provider.isAvailable || providerStatus.fallback || providerStatus.unavailable);
+  if (!provider.isAvailable || providerStatus.fallback || providerStatus.unavailable) {
+    setMessage(providerStatus.fallback || providerStatus.unavailable ? providerStatus.message : provider.unavailableMessage, "error");
   }
 }
 
 function renderTerrainLegend() {
   if (!elements.terrainLegend) return;
+  const providerStatus = getProviderStatus({
+    mode: normalizePrecisionMode(getValue(elements.precisionMode, latestPrecisionMode)),
+    edition: getValue(elements.edition, latestEdition),
+  });
+  if (providerStatus.unavailable) {
+    elements.terrainLegend.innerHTML = '<span>正確生成エンジン未導入のため、バイオーム凡例は表示していません。</span>';
+    return;
+  }
   const provider = getTerrainProvider(getValue(elements.terrainMode, "simple"));
   const terrainTypes = provider.getLegend();
   if (!terrainTypes.length) {
@@ -1070,7 +1118,7 @@ function renderVersionOptions(edition, selectedValue) {
   elements.version.value = nextValue;
 }
 
-function renderPrecisionModeOptions(edition, selectedValue = "preview") {
+function renderPrecisionModeOptions(edition, selectedValue = "accurate") {
   if (!elements.precisionMode) return;
   const options = getPrecisionModeOptions(edition);
   const fallbackValue = options[0][0];

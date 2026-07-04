@@ -43,8 +43,8 @@
           <label class="terrain-mode field">
             <span>精度モード</span>
             <select id="precision-mode-select">
-              <option value="preview" selected>高速プレビュー</option>
-              <option value="accurate">正確生成: cubiomes WASM導入</option>
+              <option value="accurate" selected>正確生成: cubiomes WASM導入</option>
+              <option value="preview">プレビュー生成</option>
             </select>
           </label>
 
@@ -98,7 +98,7 @@
           </label>
           <label class="layer-toggle">
             <input id="auto-structure-layer-toggle" type="checkbox" checked>
-            <span>構造物候補: ON</span>
+            <span>構造物表示: ON</span>
           </label>
           <label class="layer-toggle">
             <input id="manual-marker-layer-toggle" type="checkbox" checked>
@@ -110,16 +110,25 @@
           </label>
           <label class="layer-toggle">
             <input id="terrain-layer-toggle" type="checkbox" checked>
-            <span>疑似バイオーム: ON</span>
+            <span>バイオーム表示: ON</span>
+          </label>
+          <label class="layer-toggle">
+            <input id="chunk-grid-toggle" type="checkbox">
+            <span>チャンク境界: OFF</span>
+          </label>
+          <label class="layer-toggle">
+            <input id="region-grid-toggle" type="checkbox">
+            <span>リージョン境界: OFF</span>
           </label>
           <label class="terrain-mode field">
-            <span>地形モード</span>
+            <span>地形表示</span>
             <select id="terrain-mode-select">
-              <option value="simple" selected>疑似バイオーム: 利用可能</option>
-              <option value="cubiomes">詳細バイオーム: 準備中 / WASM未配置</option>
+              <option value="biome-color" selected>バイオームカラー</option>
+              <option value="height" disabled>高度/地形: 未対応</option>
+              <option value="realistic" disabled>リアル地形風: 未対応</option>
             </select>
           </label>
-          <p id="terrain-mode-status" class="layer-note">高速プレビュー: 疑似生成です。実ワールド/Chunkbase比較用ではありません。</p>
+          <p id="terrain-mode-status" class="layer-note">正確生成: エンジン未導入時は地形・構造物を表示しません。</p>
           <p id="version-note" class="layer-note">対象: Java版。1.21 / 1.20 / 1.19 / 1.18は現時点では同一候補ロジックです。</p>
         </section>
 
@@ -149,7 +158,7 @@
             構造物候補: 未生成
           </div>
           <p class="layer-note">ドラッグで移動、マウスホイールでズームできます。構造物候補はスライムチャンクON/OFFとは独立して表示されます。</p>
-          <p class="layer-note is-warning">高速プレビューは疑似生成です。実ワールド/Chunkbase比較にはJava版の正確生成エンジン導入が必要です。</p>
+          <p class="layer-note is-warning">プレビュー生成は疑似生成です。実ワールド/Chunkbase比較にはJava版の正確生成エンジン導入が必要です。</p>
           <div id="terrain-legend" class="terrain-legend" aria-label="疑似バイオーム凡例"></div>
 
           <div class="map-scroll" aria-label="Seed Mapの表示領域">
@@ -191,10 +200,10 @@
           <div class="status-item"><span>Canvasマップ</span><strong class="status-badge done">対応済み</strong></div>
           <div class="status-item"><span>ドラッグ移動 / ホイールズーム</span><strong class="status-badge done">対応済み</strong></div>
           <div class="status-item"><span>Java版スライムチャンク</span><strong class="status-badge done">対応済み</strong></div>
-          <div class="status-item"><span>統合版スライムチャンク</span><strong class="status-badge candidate">候補表示</strong></div>
-          <div class="status-item"><span>Java版構造物候補</span><strong class="status-badge candidate">候補表示</strong></div>
-          <div class="status-item"><span>統合版構造物候補</span><strong class="status-badge candidate">候補表示</strong></div>
-          <div class="status-item"><span>疑似バイオーム</span><strong class="status-badge done">対応済み</strong></div>
+          <div class="status-item"><span>統合版スライムチャンク</span><strong class="status-badge candidate">検証中</strong></div>
+          <div class="status-item"><span>Java版構造物プレビュー</span><strong class="status-badge candidate">デモ</strong></div>
+          <div class="status-item"><span>統合版構造物プレビュー</span><strong class="status-badge candidate">デモ</strong></div>
+          <div class="status-item"><span>疑似バイオーム</span><strong class="status-badge candidate">プレビューのみ</strong></div>
           <div class="status-item"><span>詳細バイオーム</span><strong class="status-badge preparing">WASM導入待ち</strong></div>
           <div class="status-item"><span>cubiomes WASM</span><strong class="status-badge preparing">未同梱</strong></div>
           <div class="status-item"><span>Java正確バイオーム</span><strong class="status-badge preparing">WASM待ち</strong></div>

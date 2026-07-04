@@ -1,9 +1,11 @@
 export const SIMPLE_TERRAIN_TYPES = [
   { id: "plains", label: "草原", color: "#78b85f" },
-  { id: "forest", label: "森林", color: "#3f8748" },
+  { id: "forest", label: "森", color: "#3f8748" },
+  { id: "dark_forest", label: "暗い森", color: "#2f6339" },
   { id: "desert", label: "砂漠", color: "#d9c77a" },
   { id: "snow", label: "雪原", color: "#dce8e5" },
   { id: "ocean", label: "海", color: "#377fb1" },
+  { id: "river", label: "川", color: "#4b91c7" },
   { id: "mountains", label: "山岳", color: "#858b7b" },
   { id: "swamp", label: "湿地", color: "#607a50" },
   { id: "savanna", label: "サバンナ", color: "#b4b957" },
@@ -11,30 +13,35 @@ export const SIMPLE_TERRAIN_TYPES = [
   { id: "badlands", label: "荒野風", color: "#bf7a4a" },
 ];
 
+const TERRAIN = Object.fromEntries(SIMPLE_TERRAIN_TYPES.map((terrain) => [terrain.id, terrain]));
+
 export const simpleTerrainProvider = {
   id: "simple",
-  label: "簡易地形",
+  label: "疑似バイオーム",
   isAvailable: true,
   getLegend() {
     return SIMPLE_TERRAIN_TYPES;
   },
   getTerrainForChunk(seed, chunkX, chunkZ) {
-    const scale = 22;
-    const elevation = octaveNoise(seed, chunkX / scale, chunkZ / scale, 4, 11n);
-    const temperature = octaveNoise(seed, chunkX / 36, chunkZ / 36, 3, 97n);
-    const moisture = octaveNoise(seed, chunkX / 30, chunkZ / 30, 3, 193n);
-    const roughness = octaveNoise(seed, chunkX / 14, chunkZ / 14, 2, 389n);
+    const scale = 24;
+    const elevation = octaveNoise(seed, chunkX / scale, chunkZ / scale, 5, 11n);
+    const temperature = octaveNoise(seed, chunkX / 42, chunkZ / 42, 4, 97n);
+    const moisture = octaveNoise(seed, chunkX / 34, chunkZ / 34, 4, 193n);
+    const roughness = octaveNoise(seed, chunkX / 16, chunkZ / 16, 3, 389n);
+    const river = Math.abs(octaveNoise(seed, chunkX / 18, chunkZ / 18, 3, 577n) - 0.5);
 
-    if (elevation < 0.28) return SIMPLE_TERRAIN_TYPES[4];
-    if (elevation > 0.78 || (elevation > 0.68 && roughness > 0.58)) return SIMPLE_TERRAIN_TYPES[5];
-    if (temperature < 0.22) return SIMPLE_TERRAIN_TYPES[3];
-    if (temperature > 0.72 && moisture < 0.33) return SIMPLE_TERRAIN_TYPES[2];
-    if (temperature > 0.64 && moisture < 0.52) return SIMPLE_TERRAIN_TYPES[7];
-    if (temperature > 0.56 && moisture > 0.72) return SIMPLE_TERRAIN_TYPES[8];
-    if (temperature > 0.58 && moisture < 0.22 && elevation > 0.48) return SIMPLE_TERRAIN_TYPES[9];
-    if (moisture > 0.72 && elevation < 0.55) return SIMPLE_TERRAIN_TYPES[6];
-    if (moisture > 0.52) return SIMPLE_TERRAIN_TYPES[1];
-    return SIMPLE_TERRAIN_TYPES[0];
+    if (river < 0.035 && elevation > 0.31 && elevation < 0.72) return TERRAIN.river;
+    if (elevation < 0.27) return TERRAIN.ocean;
+    if (elevation > 0.8 || (elevation > 0.68 && roughness > 0.6)) return TERRAIN.mountains;
+    if (temperature < 0.22) return TERRAIN.snow;
+    if (temperature > 0.74 && moisture < 0.34) return TERRAIN.desert;
+    if (temperature > 0.64 && moisture < 0.52) return TERRAIN.savanna;
+    if (temperature > 0.57 && moisture > 0.72) return TERRAIN.jungle;
+    if (temperature > 0.58 && moisture < 0.24 && elevation > 0.48) return TERRAIN.badlands;
+    if (moisture > 0.75 && elevation < 0.55) return TERRAIN.swamp;
+    if (moisture > 0.64) return TERRAIN.dark_forest;
+    if (moisture > 0.48) return TERRAIN.forest;
+    return TERRAIN.plains;
   },
 };
 

@@ -116,8 +116,24 @@ export const CATEGORY_SYMBOLS = {
   "その他": "他",
 };
 
+const LEGACY_CATEGORY_MAP = new Map([
+  ["譚・", "村"],
+  ["隕∝｡・", "要塞"],
+  ["蟒・・繝ｼ繧ｿ繝ｫ", "廃ポータル"],
+  ["豬ｷ蠎慕･樊ｮｿ", "海底神殿"],
+  ["譽ｮ縺ｮ豢矩､ｨ", "森の洋館"],
+  ["繝斐Μ繧ｸ繝｣繝ｼ蜑榊鐙蝓ｺ蝨ｰ", "ピリジャー前哨基地"],
+  ["蜿､莉｣驛ｽ蟶・", "古代都市"],
+  ["繝医Λ繧､繧｢繝ｫ繝√Ε繝ｳ繝舌・", "トライアルチャンバー"],
+  ["繧ｹ繝昴リ繝ｼ", "スポナー"],
+  ["縺昴・莉・", "その他"],
+]);
+
 export function normalizeStructureCategory(category) {
-  return STRUCTURE_CATEGORIES.includes(category) ? category : "その他";
+  if (STRUCTURE_CATEGORIES.includes(category)) {
+    return category;
+  }
+  return LEGACY_CATEGORY_MAP.get(category) || "その他";
 }
 
 export function getCategoryColor(category) {

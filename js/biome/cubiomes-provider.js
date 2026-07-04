@@ -69,5 +69,5 @@ export function getStatus() {
 }
 
 export function getUnavailableMessage() {
-  return "cubiomes WASM未配置です。現在は簡易地形のみ利用できます。";
+  return "cubiomes WASM未配置です。現在は疑似バイオームのみ利用できます。";
 }

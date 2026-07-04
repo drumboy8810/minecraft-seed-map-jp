@@ -1,8 +1,10 @@
 import { seedToJavaLong, isSlimeChunk } from "./slime.js";
 import { addMemo, clearMemos, deleteMemo, loadMemos } from "./storage.js";
-import { detectStructures } from "./structures/detector.js?v=4.0.1";
-import { applyStructureLayer, getEditionLabel, getSourceLabel, getVisibleStructures } from "./structures/layer.js?v=4.0.1";
-import { getTerrainProvider } from "./terrain.js?v=4.0.1";
+import { MapEngine } from "./map/map-engine.js?v=5.0.0";
+import { getStructuresInView } from "./map/structure-provider.js?v=5.0.0";
+import { getEditionLabel, getSourceLabel, getVisibleStructures } from "./structures/layer.js?v=5.0.0";
+import { STRUCTURE_CATEGORIES, getCategoryColor, normalizeStructureCategory } from "./structures/config.js?v=5.0.0";
+import { getTerrainProvider } from "./terrain.js?v=5.0.0";
 import {
   blockToChunk,
   convertNetherToOverworld,
@@ -12,8 +14,7 @@ import {
   toInteger,
 } from "./utils.js";
 
-const BEDROCK_CANDIDATE_MESSAGE = "統合版は候補表示対応です。Java版とは別ロジックですが、現時点では同一候補ロジックを含み、結果は今後検証が必要です。";
-const DEBUG_STRUCTURE_LAYER = false;
+const BEDROCK_CANDIDATE_MESSAGE = "統合版は候補表示対応です。Java版とは別扱いですが、現時点では簡易候補のため今後検証が必要です。";
 const VERSION_OPTIONS = {
   java: [
     ["java-1.21", "1.21"],
@@ -26,38 +27,6 @@ const VERSION_OPTIONS = {
     ["bedrock-1.21", "1.21系"],
     ["bedrock-1.20", "1.20系"],
   ],
-};
-const STRUCTURE_CATEGORIES = [
-  "村",
-  "要塞",
-  "廃ポータル",
-  "海底神殿",
-  "森の洋館",
-  "ピリジャー前哨基地",
-  "古代都市",
-  "エンドポータル",
-  "ネザー要塞",
-  "砦の遺跡",
-  "エンドシティ",
-  "トライアルチャンバー",
-  "スポナー",
-  "その他",
-];
-const CATEGORY_COLORS = {
-  "村": "#8be071",
-  "要塞": "#e3bd64",
-  "廃ポータル": "#b27cff",
-  "海底神殿": "#58c7e6",
-  "森の洋館": "#5fb36d",
-  "ピリジャー前哨基地": "#ee796f",
-  "古代都市": "#6f8cff",
-  "エンドポータル": "#d58cff",
-  "ネザー要塞": "#e35454",
-  "砦の遺跡": "#d88a45",
-  "エンドシティ": "#d6d0ff",
-  "トライアルチャンバー": "#78d0b3",
-  "スポナー": "#f0d66b",
-  "その他": "#b9c7b0",
 };
 
 const elements = {
@@ -72,7 +41,7 @@ const elements = {
   origin: document.querySelector("#origin-button"),
   reset: document.querySelector("#reset-button"),
   message: document.querySelector("#message"),
-  grid: document.querySelector("#chunk-grid"),
+  canvas: document.querySelector("#map-canvas"),
   summary: document.querySelector("#map-summary"),
   centerStatus: document.querySelector("#center-status"),
   slimeLayerToggle: document.querySelector("#slime-layer-toggle"),
@@ -114,6 +83,31 @@ let latestRangeCopyText = "";
 let latestCenterPoint = null;
 let latestAutoStructures = [];
 let latestWorldSeed = null;
+let latestEdition = "java";
+let latestVersion = "java-1.21";
+let mapEngine = null;
+
+if (elements.canvas) {
+  mapEngine = new MapEngine(elements.canvas, {
+    onSelect: selectMapPoint,
+    onViewChange(centerX, centerZ, meta) {
+      if (elements.centerX) elements.centerX.value = String(Math.round(centerX));
+      if (elements.centerZ) elements.centerZ.value = String(Math.round(centerZ));
+      updateCenterStatus({
+        centerChunkX: blockToChunk(centerX),
+        centerChunkZ: blockToChunk(centerZ),
+        centerX: Math.round(centerX),
+        centerZ: Math.round(centerZ),
+      });
+      if (!meta.live) {
+        generateMap("表示位置を更新しました。");
+      }
+    },
+    onZoomChange(label) {
+      setMessage(`ズーム: ${label}`, "success");
+    },
+  });
+}
 
 elements.form?.addEventListener("submit", (event) => {
   event.preventDefault();
@@ -129,17 +123,20 @@ elements.origin?.addEventListener("click", () => {
 });
 
 elements.reset?.addEventListener("click", () => {
-  elements.seed.value = "";
-  elements.edition.value = "java";
+  if (elements.seed) elements.seed.value = "";
+  if (elements.edition) elements.edition.value = "java";
   renderVersionOptions("java", "java-1.21");
   updateVersionNote();
-  elements.centerX.value = "0";
-  elements.centerZ.value = "0";
-  elements.radius.value = "32";
+  if (elements.centerX) elements.centerX.value = "0";
+  if (elements.centerZ) elements.centerZ.value = "0";
+  if (elements.radius) elements.radius.value = "32";
   clearSelectedChunk();
-  elements.grid.innerHTML = "";
+  latestAutoStructures = [];
   latestWorldSeed = null;
-  elements.summary.textContent = "条件を入力してマップを生成してください。";
+  latestEdition = "java";
+  latestVersion = "java-1.21";
+  updateMapEngine();
+  setText(elements.summary, "条件を入力してマップを生成してください。");
   updateCenterStatus(null);
   setMessage("初期値に戻しました。", "success");
 });
@@ -164,9 +161,9 @@ elements.usePoint?.addEventListener("click", () => {
     setMessage("地点登録に使うチャンクを選択してください。", "error");
     return;
   }
-  elements.memoX.value = String(latestCenterPoint.x);
-  elements.memoZ.value = String(latestCenterPoint.z);
-  elements.memoTitle.focus();
+  if (elements.memoX) elements.memoX.value = String(latestCenterPoint.x);
+  if (elements.memoZ) elements.memoZ.value = String(latestCenterPoint.z);
+  elements.memoTitle?.focus();
   setMessage("選択チャンクの中心座標を地点登録フォームに入れました。", "success");
 });
 
@@ -177,16 +174,16 @@ elements.converterForm?.addEventListener("submit", (event) => {
 
 elements.memoForm?.addEventListener("submit", (event) => {
   event.preventDefault();
-  const title = elements.memoTitle.value.trim();
-  const x = toInteger(elements.memoX.value);
-  const z = toInteger(elements.memoZ.value);
+  const title = getValue(elements.memoTitle).trim();
+  const x = toInteger(getValue(elements.memoX));
+  const z = toInteger(getValue(elements.memoZ));
 
   if (!title) {
-    setMessage("メモのタイトルを入力してください。", "error");
+    setMessage("地点名を入力してください。", "error");
     return;
   }
   if (x === null || z === null) {
-    setMessage("メモのX座標とZ座標には整数を入力してください。", "error");
+    setMessage("地点メモのX座標とZ座標には整数を入力してください。", "error");
     return;
   }
 
@@ -194,12 +191,12 @@ elements.memoForm?.addEventListener("submit", (event) => {
     title,
     x,
     z,
-    type: elements.memoType.value,
-    body: elements.memoBody.value.trim(),
+    type: getValue(elements.memoType, "その他"),
+    body: getValue(elements.memoBody).trim(),
   });
   elements.memoForm.reset();
   renderMemos();
-  applyMemoMarkers();
+  updateMapEngine();
   setMessage("地点メモを保存しました。", "success");
 });
 
@@ -211,7 +208,7 @@ elements.clearMemos?.addEventListener("click", () => {
   if (confirm("すべての地点メモを削除しますか？")) {
     clearMemos();
     renderMemos();
-    applyMemoMarkers();
+    updateMapEngine();
     setMessage("地点メモをすべて削除しました。", "success");
   }
 });
@@ -224,30 +221,26 @@ elements.memoList?.addEventListener("click", (event) => {
   }
 
   const button = event.target.closest("[data-delete-memo]");
-  if (!button) {
-    return;
-  }
+  if (!button) return;
   deleteMemo(button.dataset.deleteMemo);
   renderMemos();
-  applyMemoMarkers();
+  updateMapEngine();
   setMessage("地点メモを削除しました。", "success");
 });
 
 elements.memoSearch?.addEventListener("input", () => {
   renderMemos();
-  applyMemoMarkers();
+  updateMapEngine();
 });
 
 elements.memoCategorySearch?.addEventListener("input", () => {
   renderMemos();
-  applyMemoMarkers();
+  updateMapEngine();
 });
 
 elements.memoFilterGroup?.addEventListener("change", (event) => {
   const target = event.target;
-  if (!(target instanceof HTMLInputElement)) {
-    return;
-  }
+  if (!(target instanceof HTMLInputElement)) return;
 
   if (target.value === "all") {
     setCategoryFiltersChecked(target.checked);
@@ -255,164 +248,119 @@ elements.memoFilterGroup?.addEventListener("change", (event) => {
     syncAllCategoryFilter();
   }
   renderMemos();
-  applyMemoMarkers();
+  updateMapEngine();
 });
 
 elements.slimeLayerToggle?.addEventListener("change", () => {
-  updateSlimeLayerToggleLabel();
-  applySlimeLayerDisplay();
+  updateLayerToggleLabels();
+  updateMapEngine();
 });
 
 elements.autoStructureLayerToggle?.addEventListener("change", () => {
-  updateAutoStructureLayerToggleLabel();
-  applyMemoMarkers();
+  updateLayerToggleLabels();
+  updateMapEngine();
 });
 
 elements.manualMarkerLayerToggle?.addEventListener("change", () => {
-  updateManualMarkerLayerToggleLabel();
-  applyMemoMarkers();
+  updateLayerToggleLabels();
+  updateMapEngine();
 });
 
 elements.terrainLayerToggle?.addEventListener("change", () => {
-  updateTerrainLayerToggleLabel();
-  applyTerrainLayer();
+  updateLayerToggleLabels();
+  updateMapEngine();
 });
 
 elements.terrainMode?.addEventListener("change", () => {
   updateTerrainModeStatus();
   renderTerrainLegend();
-  applyTerrainLayer();
+  updateMapEngine();
 });
 
 renderVersionOptions(getValue(elements.edition, "java"), getValue(elements.version, "java-1.21"));
 renderCategoryFilters();
-updateSlimeLayerToggleLabel();
-updateTerrainLayerToggleLabel();
+renderMemoTypeOptions();
+updateLayerToggleLabels();
 updateTerrainModeStatus();
 renderTerrainLegend();
-updateAutoStructureLayerToggleLabel();
-updateManualMarkerLayerToggleLabel();
 updateVersionNote();
 renderMemos();
+clearSelectedChunk();
+updateMapEngine();
 
 function moveMapTo(x, z, successMessage) {
-  elements.centerX.value = String(x);
-  elements.centerZ.value = String(z);
+  if (elements.centerX) elements.centerX.value = String(x);
+  if (elements.centerZ) elements.centerZ.value = String(z);
   generateMap(successMessage);
 }
 
-function generateMap(successMessage = "マップを生成しました。チャンクを選択すると詳細を確認できます。") {
-  const seedText = elements.seed.value.trim();
-  const centerX = toInteger(elements.centerX.value);
-  const centerZ = toInteger(elements.centerZ.value);
-  const radius = toInteger(elements.radius.value);
-  const edition = elements.edition.value;
+function generateMap(successMessage = "マップを生成しました。チャンクや構造物アイコンをクリックすると詳細を確認できます。") {
+  const seedText = getValue(elements.seed).trim();
+  const centerX = toInteger(getValue(elements.centerX));
+  const centerZ = toInteger(getValue(elements.centerZ));
+  const radius = toInteger(getValue(elements.radius));
+  const edition = getValue(elements.edition, "java");
 
   if (!seedText) {
     setMessage("シード値を入力してください。", "error");
     return;
   }
   if (centerX === null || centerZ === null) {
-    setMessage("座標には整数を入力してください。", "error");
+    setMessage("中心座標には整数を入力してください。", "error");
     return;
   }
   if (radius === null || radius < 1 || radius > 128) {
-    setMessage("表示範囲が大きすぎます。128チャンク以内で指定してください。", "error");
+    setMessage("表示範囲は1〜128チャンクで指定してください。", "error");
     return;
   }
 
   const worldSeed = seedToJavaLong(seedText);
   latestWorldSeed = worldSeed;
-  latestAutoStructures = detectStructures({
+  latestEdition = edition;
+  latestVersion = getValue(elements.version);
+  latestAutoStructures = getStructuresInView({
     seed: worldSeed,
     edition,
-    version: elements.version.value,
+    version: latestVersion,
     centerX,
     centerZ,
     radius,
   });
-  if (DEBUG_STRUCTURE_LAYER && !latestAutoStructures.length) {
-    console.warn("構造物候補: 表示範囲内に自動候補がありません。", {
-      edition,
-      version: getValue(elements.version),
-      centerX,
-      centerZ,
-      radius,
-    });
-  }
+
   const centerChunkX = blockToChunk(centerX);
   const centerChunkZ = blockToChunk(centerZ);
   const diameter = radius * 2 + 1;
   let slimeCount = 0;
-
-  elements.grid.innerHTML = "";
-  elements.grid.style.gridTemplateColumns = `repeat(${diameter}, var(--chunk-size))`;
-  elements.grid.style.setProperty("--chunk-size", `${getChunkCellSize(radius)}px`);
   clearSelectedChunk();
-
-  const fragment = document.createDocumentFragment();
   for (let z = centerChunkZ - radius; z <= centerChunkZ + radius; z += 1) {
     for (let x = centerChunkX - radius; x <= centerChunkX + radius; x += 1) {
-      const isSlime = isSlimeChunk(worldSeed, x, z, edition);
-      if (isSlime) {
-        slimeCount += 1;
-      }
-      const button = document.createElement("button");
-      button.type = "button";
-      button.className = "chunk-cell";
-      button.classList.toggle("is-slime", isSlime);
-      button.classList.toggle("is-center", Math.abs(x - centerChunkX) <= 1 && Math.abs(z - centerChunkZ) <= 1);
-      button.setAttribute("role", "gridcell");
-      const ariaLabel = `チャンク X ${x}, Z ${z}, ${isSlime ? "スライムチャンク" : "通常チャンク"}`;
-      button.setAttribute("aria-label", ariaLabel);
-      button.dataset.x = String(x);
-      button.dataset.z = String(z);
-      button.dataset.slime = String(isSlime);
-      button.dataset.baseLabel = ariaLabel;
-      button.addEventListener("click", () => selectChunk(button));
-      fragment.appendChild(button);
+      if (isSlimeChunk(worldSeed, x, z, edition)) slimeCount += 1;
     }
   }
 
-  elements.grid.appendChild(fragment);
-  applySlimeLayerDisplay();
-  applyTerrainLayer();
-  applyMemoMarkers();
+  updateMapEngine();
   const editionLabel = edition === "bedrock" ? "統合版" : "Java版";
   const editionNote = edition === "bedrock" ? ` ${BEDROCK_CANDIDATE_MESSAGE}` : "";
-  const autoStructureCount = latestAutoStructures.length;
-  const autoStructureNote = isChecked(elements.autoStructureLayerToggle)
-    ? ` / 構造物候補 ${autoStructureCount}件（候補表示）`
-    : "";
   const slimeNote = isChecked(elements.slimeLayerToggle) ? ` / スライム ${slimeCount}件` : " / スライム非表示";
-  elements.summary.textContent = `${editionLabel} ${getSelectedVersionLabel()} / 中心チャンク X=${centerChunkX}, Z=${centerChunkZ} / ${diameter}×${diameter}${slimeNote}${autoStructureNote}。${editionNote}`;
+  const structureNote = isChecked(elements.autoStructureLayerToggle) ? ` / 構造物候補 ${latestAutoStructures.length}件` : " / 構造物候補非表示";
+  setText(
+    elements.summary,
+    `${editionLabel} ${getSelectedVersionLabel()} / 中心チャンク X=${centerChunkX}, Z=${centerChunkZ} / ${diameter}×${diameter}${slimeNote}${structureNote}。${editionNote}`,
+  );
   updateCenterStatus({ centerChunkX, centerChunkZ, centerX, centerZ });
   setMessage(edition === "bedrock" ? BEDROCK_CANDIDATE_MESSAGE : successMessage, "success");
 }
 
-function getChunkCellSize(radius) {
-  if (radius >= 128) return 8;
-  if (radius >= 96) return 10;
-  if (radius >= 64) return 12;
-  if (radius >= 32) return 16;
-  return 20;
-}
-
 function regenerateMapIfReady(message) {
-  if (latestWorldSeed === null || !elements.grid.querySelector(".chunk-cell")) {
-    return;
-  }
+  if (latestWorldSeed === null) return;
   generateMap(message);
 }
 
-function selectChunk(button) {
-  elements.grid.querySelector(".is-selected")?.classList.remove("is-selected");
-  button.classList.add("is-selected");
-
+function selectMapPoint(selection) {
   selectedChunk = {
-    x: Number(button.dataset.x),
-    z: Number(button.dataset.z),
-    isSlime: button.dataset.slime === "true",
+    x: selection.chunkX,
+    z: selection.chunkZ,
+    isSlime: isSlimeChunk(latestWorldSeed || 0n, selection.chunkX, selection.chunkZ, latestEdition),
   };
 
   const details = formatChunkDetails(selectedChunk);
@@ -424,19 +372,21 @@ function selectChunk(button) {
     z: selectedChunk.z * 16 + 8,
   };
   const netherPoint = convertOverworldToNether(latestCenterPoint.x, latestCenterPoint.z);
-  const markerDetails = getMarkerDetails(button);
+  const markerDetails = getMarkerDetailsFromMarkers(selection.markers || []);
   const nearbyDetails = getNearbyStructureDetails(selectedChunk);
-  elements.details.innerHTML = `
-    <div><dt>チャンク座標</dt><dd>${details.chunkText}</dd></div>
-    <div><dt>ブロック範囲</dt><dd>${details.blockText}</dd></div>
-    <div><dt>中心ブロック座標</dt><dd>${details.centerText}</dd></div>
-    <div><dt>ネザー換算</dt><dd>X=${netherPoint.x}, Z=${netherPoint.z}</dd></div>
-    <div><dt>判定</dt><dd>${details.resultText}</dd></div>
-    ${markerDetails}
-    ${nearbyDetails}
-  `;
+  if (elements.details) {
+    elements.details.innerHTML = `
+      <div><dt>チャンク座標</dt><dd>${details.chunkText}</dd></div>
+      <div><dt>ブロック範囲</dt><dd>${details.blockText}</dd></div>
+      <div><dt>中心ブロック座標</dt><dd>${details.centerText}</dd></div>
+      <div><dt>ネザー換算</dt><dd>X=${netherPoint.x}, Z=${netherPoint.z}</dd></div>
+      <div><dt>判定</dt><dd>${details.resultText}</dd></div>
+      ${markerDetails}
+      ${nearbyDetails}
+    `;
+  }
   setCopyButtonsDisabled(false);
-  if (selectedChunk.isSlime) {
+  if (selectedChunk.isSlime && elements.memoType) {
     elements.memoType.value = "スポナー";
   }
 }
@@ -448,32 +398,32 @@ function clearSelectedChunk() {
   latestRangeCopyText = "";
   latestCenterPoint = null;
   setCopyButtonsDisabled(true);
-  elements.details.innerHTML = `
-    <div><dt>チャンク座標</dt><dd>-</dd></div>
-    <div><dt>ブロック範囲</dt><dd>-</dd></div>
-    <div><dt>中心ブロック座標</dt><dd>-</dd></div>
-    <div><dt>ネザー換算</dt><dd>-</dd></div>
-    <div><dt>判定</dt><dd>-</dd></div>
-  `;
+  if (elements.details) {
+    elements.details.innerHTML = `
+      <div><dt>チャンク座標</dt><dd>-</dd></div>
+      <div><dt>ブロック範囲</dt><dd>-</dd></div>
+      <div><dt>中心ブロック座標</dt><dd>-</dd></div>
+      <div><dt>ネザー換算</dt><dd>-</dd></div>
+      <div><dt>判定</dt><dd>-</dd></div>
+    `;
+  }
 }
 
 function convertCoordinates() {
-  const x = toInteger(elements.converterX.value);
-  const z = toInteger(elements.converterZ.value);
+  const x = toInteger(getValue(elements.converterX));
+  const z = toInteger(getValue(elements.converterZ));
 
   if (x === null || z === null) {
-    elements.converterResult.textContent = "変換結果: X/Zには整数を入力してください。";
+    setText(elements.converterResult, "変換結果: X/Zには整数を入力してください。");
     setMessage("ネザー座標変換のX/Zには整数を入力してください。", "error");
     return;
   }
 
-  const isOverworldToNether = elements.converterDirection.value === "overworld-to-nether";
-  const converted = isOverworldToNether
-    ? convertOverworldToNether(x, z)
-    : convertNetherToOverworld(x, z);
+  const isOverworldToNether = getValue(elements.converterDirection) === "overworld-to-nether";
+  const converted = isOverworldToNether ? convertOverworldToNether(x, z) : convertNetherToOverworld(x, z);
   const label = isOverworldToNether ? "ネザー" : "オーバーワールド";
 
-  elements.converterResult.textContent = `変換結果: ${label} X=${converted.x}, Z=${converted.z}`;
+  setText(elements.converterResult, `変換結果: ${label} X=${converted.x}, Z=${converted.z}`);
   setMessage("座標を変換しました。", "success");
 }
 
@@ -487,16 +437,14 @@ async function copySelectedText(text, successMessage) {
 }
 
 function setCopyButtonsDisabled(disabled) {
-  elements.copyChunk.disabled = disabled;
-  elements.copyCenter.disabled = disabled;
-  elements.copyRange.disabled = disabled;
-  elements.usePoint.disabled = disabled;
+  if (elements.copyChunk) elements.copyChunk.disabled = disabled;
+  if (elements.copyCenter) elements.copyCenter.disabled = disabled;
+  if (elements.copyRange) elements.copyRange.disabled = disabled;
+  if (elements.usePoint) elements.usePoint.disabled = disabled;
 }
 
 function renderMemos() {
-  if (!elements.memoList) {
-    return;
-  }
+  if (!elements.memoList) return;
   const memos = getFilteredMemos();
   if (!memos.length) {
     elements.memoList.innerHTML = '<p class="empty-state">表示できる地点メモはありません。</p>';
@@ -524,56 +472,41 @@ function renderMemos() {
 
 function updateCenterStatus(center) {
   if (!center) {
-    elements.centerStatus.textContent = "中心チャンク: - / 中心ブロック: -";
+    setText(elements.centerStatus, "中心チャンク: - / 中心ブロック: -");
     return;
   }
-  elements.centerStatus.textContent = `中心チャンク: X=${center.centerChunkX}, Z=${center.centerChunkZ} / 中心ブロック: X=${center.centerX}, Z=${center.centerZ}`;
+  setText(elements.centerStatus, `中心チャンク: X=${center.centerChunkX}, Z=${center.centerChunkZ} / 中心ブロック: X=${center.centerX}, Z=${center.centerZ}`);
 }
 
-function applyTerrainLayer() {
-  const cells = Array.from(elements.grid.querySelectorAll(".chunk-cell"));
-  if (!cells.length || latestWorldSeed === null) {
-    return;
-  }
-  const provider = getTerrainProvider(getValue(elements.terrainMode, "simple"));
-
-  for (const cell of cells) {
-    if (!isChecked(elements.terrainLayerToggle) || !provider.isAvailable) {
-      cell.classList.remove("has-terrain");
-      cell.style.removeProperty("--terrain-color");
-      cell.dataset.terrain = "";
-      continue;
-    }
-
-    const terrain = provider.getTerrainForChunk(latestWorldSeed, Number(cell.dataset.x), Number(cell.dataset.z));
-    if (!terrain) {
-      continue;
-    }
-    cell.classList.add("has-terrain");
-    cell.style.setProperty("--terrain-color", terrain.color);
-    cell.dataset.terrain = terrain.label;
-  }
-}
-
-function applyMemoMarkers() {
-  const visibleStructures = getVisibleStructureRecords();
-  const stats = applyStructureLayer({
-    grid: elements.grid,
-    structures: visibleStructures,
+function updateMapEngine() {
+  const autoStructures = getVisibleAutoStructures();
+  const manualMarkers = getVisibleManualMarkers();
+  const terrainProvider = getTerrainProvider(getValue(elements.terrainMode, "simple"));
+  mapEngine?.setState({
+    seed: latestWorldSeed ?? 0n,
+    edition: latestEdition,
+    version: latestVersion,
+    centerX: toInteger(getValue(elements.centerX)) ?? 0,
+    centerZ: toInteger(getValue(elements.centerZ)) ?? 0,
+    structures: autoStructures,
+    manualMarkers,
+    layers: {
+      terrain: isChecked(elements.terrainLayerToggle) && terrainProvider.isAvailable,
+      slime: isChecked(elements.slimeLayerToggle),
+      structures: isChecked(elements.autoStructureLayerToggle),
+      manual: isChecked(elements.manualMarkerLayerToggle),
+    },
   });
-  updateStructureCandidateStatus(stats, visibleStructures);
+  updateStructureCandidateStatus({
+    autoVisible: autoStructures.length,
+    manualVisible: manualMarkers.length,
+  });
 }
 
-function getMarkerDetails(button) {
-  const markerIds = button.dataset.markerIds ? button.dataset.markerIds.split(",").filter(Boolean) : [];
-  if (!markerIds.length) {
-    return "";
-  }
+function getMarkerDetailsFromMarkers(markers) {
+  if (!markers.length) return "";
 
-  const memosById = new Map(getVisibleStructureRecords().map((memo) => [memo.id, memo]));
-  const markerItems = markerIds
-    .map((id) => memosById.get(id))
-    .filter(Boolean)
+  const markerItems = markers
     .map((memo) => `
       <article class="marker-detail">
         <h3>${escapeHtml(memo.name || memo.title)}</h3>
@@ -583,7 +516,7 @@ function getMarkerDetails(button) {
     `)
     .join("");
 
-  return `<div><dt>地点メモ</dt><dd>${markerItems}</dd></div>`;
+  return `<div><dt>クリック地点のマーカー</dt><dd>${markerItems}</dd></div>`;
 }
 
 function getNearbyStructureDetails(chunk) {
@@ -614,13 +547,20 @@ function getNearbyStructureDetails(chunk) {
 }
 
 function renderCategoryFilters() {
-  if (!elements.memoFilterGroup) {
-    return;
-  }
+  if (!elements.memoFilterGroup) return;
   elements.memoFilterGroup.innerHTML = [
     '<label><input type="checkbox" value="all" checked> 全表示</label>',
-    ...STRUCTURE_CATEGORIES.map((category) => `<label><input type="checkbox" value="${escapeHtml(category)}" checked> ${escapeHtml(category)}のみ</label>`),
+    ...STRUCTURE_CATEGORIES.map((category) => `<label><input type="checkbox" value="${escapeHtml(category)}" checked> ${escapeHtml(category)}</label>`),
   ].join("");
+}
+
+function renderMemoTypeOptions() {
+  if (!elements.memoType) return;
+  elements.memoType.innerHTML = STRUCTURE_CATEGORIES
+    .map((category) => `<option value="${escapeHtml(category)}">${escapeHtml(category)}</option>`)
+    .join("");
+  elements.memoType.value = "拠点";
+  if (!elements.memoType.value) elements.memoType.value = "その他";
 }
 
 function getFilteredMemos() {
@@ -630,20 +570,16 @@ function getFilteredMemos() {
 
   return loadMemos().filter((memo) => {
     const category = normalizeCategory(memo.type);
-    const titleMatches = !titleQuery || String(memo.title || "").toLowerCase().includes(titleQuery);
+    const titleMatches = !titleQuery || String(memo.title || memo.name || "").toLowerCase().includes(titleQuery);
     const categoryMatches = !categoryQuery || category.toLowerCase().includes(categoryQuery);
     return titleMatches && categoryMatches && activeCategories.has(category);
   });
 }
 
 function getActiveCategories() {
-  if (!elements.memoFilterGroup) {
-    return new Set(STRUCTURE_CATEGORIES);
-  }
+  if (!elements.memoFilterGroup) return new Set(STRUCTURE_CATEGORIES);
   const allFilter = elements.memoFilterGroup.querySelector('input[type="checkbox"][value="all"]');
-  if (allFilter?.checked) {
-    return new Set(STRUCTURE_CATEGORIES);
-  }
+  if (allFilter?.checked) return new Set(STRUCTURE_CATEGORIES);
 
   const checked = Array.from(elements.memoFilterGroup.querySelectorAll('input[type="checkbox"]:checked'))
     .map((input) => input.value)
@@ -661,16 +597,32 @@ function getVisibleStructureRecords() {
   });
 }
 
-function updateStructureCandidateStatus(stats = { autoVisible: 0, manualVisible: 0 }, visibleStructures = []) {
-  if (!elements.structureCandidateStatus) {
-    return;
-  }
+function getVisibleAutoStructures() {
+  return getVisibleStructures({
+    manualStructures: [],
+    autoStructures: latestAutoStructures,
+    activeCategories: getActiveCategories(),
+    showManual: false,
+    showAuto: isChecked(elements.autoStructureLayerToggle),
+  });
+}
+
+function getVisibleManualMarkers() {
+  return getVisibleStructures({
+    manualStructures: getFilteredMemos(),
+    autoStructures: [],
+    activeCategories: getActiveCategories(),
+    showManual: isChecked(elements.manualMarkerLayerToggle),
+    showAuto: false,
+  });
+}
+
+function updateStructureCandidateStatus(stats = { autoVisible: 0, manualVisible: 0 }) {
+  if (!elements.structureCandidateStatus) return;
   const autoDetected = latestAutoStructures.length;
   const autoLayerOn = isChecked(elements.autoStructureLayerToggle);
   const visibleAuto = stats.autoVisible || 0;
   const visibleManual = stats.manualVisible || 0;
-  const autoInCurrentGrid = countAutoStructuresInCurrentGrid(latestAutoStructures);
-  const autoAfterFiltersInCurrentGrid = countAutoStructuresInCurrentGrid(visibleStructures);
 
   if (!autoLayerOn) {
     elements.structureCandidateStatus.textContent = `構造物候補: ${autoDetected}件検出 / 自動候補レイヤーOFF`;
@@ -678,18 +630,9 @@ function updateStructureCandidateStatus(stats = { autoVisible: 0, manualVisible:
     return;
   }
 
-  if (!autoDetected || !autoInCurrentGrid) {
-    elements.structureCandidateStatus.textContent = `構造物候補: ${autoDetected}件検出 / 表示範囲内に候補がありません / 手動マーカー ${visibleManual}件`;
+  if (!autoDetected) {
+    elements.structureCandidateStatus.textContent = `構造物候補: 表示範囲内に候補がありません / 手動マーカー ${visibleManual}件`;
     elements.structureCandidateStatus.classList.toggle("is-empty", true);
-    if (DEBUG_STRUCTURE_LAYER && autoDetected > 0 && autoInCurrentGrid > 0 && visibleAuto === 0) {
-      console.warn("構造物候補: フィルタまたは表示範囲によりマップ上の自動候補が0件です。", {
-        detected: autoDetected,
-        inCurrentGrid: autoInCurrentGrid,
-        afterFiltersInCurrentGrid: autoAfterFiltersInCurrentGrid,
-        visibleAuto,
-        visibleManual,
-      });
-    }
     return;
   }
 
@@ -703,64 +646,23 @@ function updateStructureCandidateStatus(stats = { autoVisible: 0, manualVisible:
   elements.structureCandidateStatus.classList.toggle("is-empty", false);
 }
 
-function countAutoStructuresInCurrentGrid(structures) {
-  const gridChunks = new Set(
-    Array.from(elements.grid.querySelectorAll(".chunk-cell"))
-      .map((cell) => `${cell.dataset.x},${cell.dataset.z}`),
-  );
-  if (!gridChunks.size) {
-    return 0;
-  }
-
-  return structures.filter((structure) => (
-    structure.source === "auto" &&
-    gridChunks.has(`${blockToChunk(structure.x)},${blockToChunk(structure.z)}`)
-  )).length;
+function updateLayerToggleLabels() {
+  setLayerLabel(elements.slimeLayerToggle, `スライムチャンク: ${isChecked(elements.slimeLayerToggle) ? "ON" : "OFF"}`);
+  setLayerLabel(elements.autoStructureLayerToggle, `構造物候補: ${isChecked(elements.autoStructureLayerToggle) ? "ON" : "OFF"}`);
+  setLayerLabel(elements.manualMarkerLayerToggle, `手動マーカー: ${isChecked(elements.manualMarkerLayerToggle) ? "ON" : "OFF"}`);
+  setLayerLabel(elements.terrainLayerToggle, `疑似バイオーム: ${isChecked(elements.terrainLayerToggle) ? "ON" : "OFF"}`);
 }
 
-function applySlimeLayerDisplay() {
-  elements.grid.classList.toggle("hide-slime", !isChecked(elements.slimeLayerToggle));
-}
-
-function updateSlimeLayerToggleLabel() {
-  const label = elements.slimeLayerToggle.closest(".layer-toggle")?.querySelector("span");
-  if (!label) {
-    return;
-  }
-  label.textContent = isChecked(elements.slimeLayerToggle) ? "スライムチャンク: ON" : "スライムチャンク: OFF";
-}
-
-function updateAutoStructureLayerToggleLabel() {
-  const label = elements.autoStructureLayerToggle.closest(".layer-toggle")?.querySelector("span");
-  if (!label) {
-    return;
-  }
-  label.textContent = isChecked(elements.autoStructureLayerToggle) ? "構造物候補: ON" : "構造物候補: OFF";
-}
-
-function updateManualMarkerLayerToggleLabel() {
-  const label = elements.manualMarkerLayerToggle.closest(".layer-toggle")?.querySelector("span");
-  if (!label) {
-    return;
-  }
-  label.textContent = isChecked(elements.manualMarkerLayerToggle) ? "手動マーカー: ON" : "手動マーカー: OFF";
-}
-
-function updateTerrainLayerToggleLabel() {
-  const label = elements.terrainLayerToggle.closest(".layer-toggle")?.querySelector("span");
-  if (!label) {
-    return;
-  }
-  label.textContent = isChecked(elements.terrainLayerToggle) ? "簡易地形: ON" : "簡易地形: OFF";
+function setLayerLabel(input, text) {
+  const label = input?.closest(".layer-toggle")?.querySelector("span");
+  if (label) label.textContent = text;
 }
 
 function updateTerrainModeStatus() {
-  if (!elements.terrainModeStatus) {
-    return;
-  }
+  if (!elements.terrainModeStatus) return;
   const provider = getTerrainProvider(getValue(elements.terrainMode, "simple"));
   elements.terrainModeStatus.textContent = provider.isAvailable
-    ? "現在の地形モード: 簡易地形"
+    ? "地形モード: 疑似バイオームを利用中"
     : provider.unavailableMessage;
   elements.terrainModeStatus.classList.toggle("is-warning", !provider.isAvailable);
   if (!provider.isAvailable) {
@@ -769,13 +671,11 @@ function updateTerrainModeStatus() {
 }
 
 function renderTerrainLegend() {
-  if (!elements.terrainLegend) {
-    return;
-  }
+  if (!elements.terrainLegend) return;
   const provider = getTerrainProvider(getValue(elements.terrainMode, "simple"));
   const terrainTypes = provider.getLegend();
   if (!terrainTypes.length) {
-    elements.terrainLegend.innerHTML = '<span>詳細バイオームの凡例は準備中です</span>';
+    elements.terrainLegend.innerHTML = '<span>詳細バイオームの凡例は準備中です。</span>';
     return;
   }
   elements.terrainLegend.innerHTML = terrainTypes
@@ -784,9 +684,7 @@ function renderTerrainLegend() {
 }
 
 function renderVersionOptions(edition, selectedValue) {
-  if (!elements.version) {
-    return;
-  }
+  if (!elements.version) return;
   const options = VERSION_OPTIONS[edition] || VERSION_OPTIONS.java;
   const fallbackValue = options[0][0];
   const nextValue = options.some(([value]) => value === selectedValue) ? selectedValue : fallbackValue;
@@ -797,42 +695,32 @@ function renderVersionOptions(edition, selectedValue) {
 }
 
 function getSelectedVersionLabel() {
-  if (!elements.version) {
-    return "";
-  }
+  if (!elements.version) return "";
   return elements.version.options[elements.version.selectedIndex]?.textContent || "";
 }
 
 function updateVersionNote() {
-  if (!elements.versionNote) {
-    return;
-  }
+  if (!elements.versionNote) return;
   if (getValue(elements.edition) === "bedrock") {
-    elements.versionNote.textContent = "対象: 統合版。最新 / 1.21系 / 1.20系 は現時点で同一候補ロジックです。候補表示として扱います。";
+    elements.versionNote.textContent = "対象: 統合版。最新 / 1.21系 / 1.20系は現時点では同一候補ロジックです。";
     return;
   }
-  elements.versionNote.textContent = "対象: Java版。1.21 / 1.20 / 1.19 / 1.18 は現時点で同一候補ロジックです。";
+  elements.versionNote.textContent = "対象: Java版。1.21 / 1.20 / 1.19 / 1.18は現時点では同一候補ロジックです。";
 }
 
 function setCategoryFiltersChecked(checked) {
-  if (!elements.memoFilterGroup) {
-    return;
-  }
+  if (!elements.memoFilterGroup) return;
   for (const input of elements.memoFilterGroup.querySelectorAll('input[type="checkbox"]')) {
     input.checked = checked;
   }
 }
 
 function syncAllCategoryFilter() {
-  if (!elements.memoFilterGroup) {
-    return;
-  }
+  if (!elements.memoFilterGroup) return;
   const filters = Array.from(elements.memoFilterGroup.querySelectorAll('input[type="checkbox"]'));
   const all = filters.find((input) => input.value === "all");
   const categoryFilters = filters.filter((input) => input.value !== "all");
-  if (!all) {
-    return;
-  }
+  if (!all) return;
   all.checked = categoryFilters.every((input) => input.checked);
 }
 
@@ -845,16 +733,17 @@ function getValue(element, fallback = "") {
 }
 
 function normalizeCategory(category) {
-  return STRUCTURE_CATEGORIES.includes(category) ? category : "その他";
-}
-
-function getCategoryColor(category) {
-  return CATEGORY_COLORS[normalizeCategory(category)] || CATEGORY_COLORS["その他"];
+  return normalizeStructureCategory(category);
 }
 
 function setMessage(text, type = "") {
+  if (!elements.message) return;
   elements.message.textContent = text;
   elements.message.className = `message ${type}`.trim();
+}
+
+function setText(element, text) {
+  if (element) element.textContent = text;
 }
 
 function escapeHtml(value) {

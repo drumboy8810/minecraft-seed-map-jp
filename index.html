@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="Minecraftのシード値からチャンク、構造物候補、地形レイヤー、手動登録マーカーを確認できる日本語の静的Seed Mapです。">
+    <meta name="description" content="Minecraftのシード値から疑似バイオーム、スライムチャンク、構造物候補、地点メモを確認できる日本語の静的Seed Mapです。">
     <title>Minecraft Seed Map JP</title>
     <link rel="icon" href="assets/icons/favicon.svg" type="image/svg+xml">
     <link rel="stylesheet" href="css/style.css">
@@ -13,7 +13,7 @@
       <div>
         <p class="eyebrow">外部通信なし / GitHub Pages対応</p>
         <h1>Minecraft Seed Map JP</h1>
-        <p class="lead">シード値と座標から、チャンク、構造物候補、地形レイヤー、手動マーカーをまとめて確認できる日本語Seed Mapです。</p>
+        <p class="lead">シード値から、疑似バイオーム、スライムチャンク、構造物候補、手動マーカーを重ねて確認できる探索支援マップです。</p>
       </div>
       <div class="privacy-badge" aria-label="プライバシー方針">
         入力内容は外部送信されません
@@ -24,7 +24,7 @@
       <section class="panel control-panel" aria-labelledby="controls-title">
         <div class="panel-heading">
           <h2 id="controls-title">条件入力</h2>
-          <p>シード値、中心座標、表示範囲を指定してください。</p>
+          <p>シード、エディション、中心座標、表示範囲、レイヤーを指定します。</p>
         </div>
 
         <form id="map-form" class="form-grid" novalidate>
@@ -83,7 +83,7 @@
         <section class="layer-controls" aria-labelledby="layer-controls-title">
           <div class="panel-heading compact-heading">
             <h2 id="layer-controls-title">レイヤー</h2>
-            <p>表示する情報をまとめて切り替えます。</p>
+            <p>Canvas上に重ねる情報を切り替えます。</p>
           </div>
           <label class="layer-toggle">
             <input id="slime-layer-toggle" type="checkbox" checked>
@@ -99,17 +99,17 @@
           </label>
           <label class="layer-toggle">
             <input id="terrain-layer-toggle" type="checkbox" checked>
-            <span>簡易地形: ON</span>
+            <span>疑似バイオーム: ON</span>
           </label>
           <label class="terrain-mode field">
             <span>地形モード</span>
             <select id="terrain-mode-select">
-              <option value="simple" selected>簡易地形：利用可能</option>
-              <option value="cubiomes">詳細バイオーム：準備中 / WASM未配置</option>
+              <option value="simple" selected>疑似バイオーム: 利用可能</option>
+              <option value="cubiomes">詳細バイオーム: 準備中 / WASM未配置</option>
             </select>
           </label>
-          <p id="terrain-mode-status" class="layer-note">現在の地形モード: 簡易地形</p>
-          <p id="version-note" class="layer-note">対象: Java版。1.21 / 1.20 / 1.19 / 1.18 は現時点で同一候補ロジックです。</p>
+          <p id="terrain-mode-status" class="layer-note">地形モード: 疑似バイオームを利用中</p>
+          <p id="version-note" class="layer-note">対象: Java版。1.21 / 1.20 / 1.19 / 1.18は現時点では同一候補ロジックです。</p>
         </section>
 
         <div id="message" class="message" role="status" aria-live="polite"></div>
@@ -119,17 +119,16 @@
         <section class="panel map-panel" aria-labelledby="map-title">
           <div class="panel-heading map-heading">
             <div>
-              <h2 id="map-title">チャンク・構造物マップ</h2>
-              <p id="map-summary">条件を入力してマップを生成してください。スライムチャンク表示はマップ機能の1つです。</p>
+              <h2 id="map-title">Seed Map</h2>
+              <p id="map-summary">条件を入力してマップを生成してください。スライムチャンク表示は機能の1つです。</p>
               <p id="center-status" class="center-status">中心チャンク: - / 中心ブロック: -</p>
             </div>
             <div class="legend" aria-label="凡例">
               <span><i class="legend-chip slime"></i>スライム</span>
-              <span><i class="legend-chip normal"></i>通常</span>
-              <span><i class="legend-chip center"></i>中心付近</span>
+              <span><i class="legend-chip normal"></i>地形</span>
+              <span><i class="legend-chip center"></i>中心</span>
               <span><i class="legend-chip structure"></i>手動マーカー</span>
               <span><i class="legend-chip auto-structure"></i>自動候補</span>
-              <span><i class="legend-chip stronghold"></i>要塞候補</span>
               <span><i class="legend-chip candidate"></i>候補表示</span>
             </div>
           </div>
@@ -137,42 +136,26 @@
           <div id="structure-candidate-status" class="structure-candidate-status" role="status" aria-live="polite">
             構造物候補: 未生成
           </div>
-          <p class="layer-note">スライムチャンク、構造物候補、手動マーカー、簡易地形を個別レイヤーとして表示します。候補表示は実際の生成位置と異なる場合があります。</p>
-          <p class="layer-note is-warning">詳細バイオームは準備中です。cubiomes WASM未配置でもアプリは通常どおり動作します。</p>
-          <div id="terrain-legend" class="terrain-legend" aria-label="簡易地形色分けの凡例"></div>
-          <p class="layer-note">地形色分けはSeed値と座標から作る簡易表示です。実際のMinecraftバイオームとは異なる場合があります。</p>
+          <p class="layer-note">ドラッグで移動、マウスホイールでズームできます。構造物候補はスライムチャンクON/OFFとは独立して表示されます。</p>
+          <p class="layer-note is-warning">構造物と疑似バイオームはChunkbase完全一致ではありません。候補表示のため、実際の生成位置と異なる場合があります。</p>
+          <div id="terrain-legend" class="terrain-legend" aria-label="疑似バイオーム凡例"></div>
 
-          <div class="map-scroll" aria-label="チャンクグリッドの横スクロール領域">
-            <div id="chunk-grid" class="chunk-grid" role="grid" aria-label="チャンクと構造物レイヤーのグリッド"></div>
+          <div class="map-scroll" aria-label="Seed Mapの表示領域">
+            <canvas id="map-canvas" class="map-canvas" aria-label="疑似バイオーム、スライムチャンク、構造物候補、手動マーカーのCanvasマップ"></canvas>
           </div>
         </section>
 
         <aside class="panel detail-panel" aria-labelledby="detail-title">
           <div class="panel-heading">
-            <h2 id="detail-title">選択チャンク</h2>
-            <p>チャンクをクリックすると詳細が表示されます。</p>
+            <h2 id="detail-title">選択詳細</h2>
+            <p>マップ上をクリックすると、チャンクや近くの構造物候補を確認できます。</p>
           </div>
           <dl id="chunk-details" class="detail-list">
-            <div>
-              <dt>チャンク座標</dt>
-              <dd>-</dd>
-            </div>
-            <div>
-              <dt>ブロック範囲</dt>
-              <dd>-</dd>
-            </div>
-            <div>
-              <dt>中心ブロック座標</dt>
-              <dd>-</dd>
-            </div>
-            <div>
-              <dt>ネザー換算</dt>
-              <dd>-</dd>
-            </div>
-            <div>
-              <dt>判定</dt>
-              <dd>-</dd>
-            </div>
+            <div><dt>チャンク座標</dt><dd>-</dd></div>
+            <div><dt>ブロック範囲</dt><dd>-</dd></div>
+            <div><dt>中心ブロック座標</dt><dd>-</dd></div>
+            <div><dt>ネザー換算</dt><dd>-</dd></div>
+            <div><dt>判定</dt><dd>-</dd></div>
           </dl>
           <div class="detail-actions">
             <button id="copy-chunk-button" class="secondary-button full-width" type="button" disabled>チャンク座標をコピー</button>
@@ -187,25 +170,21 @@
         <div class="panel-heading split-heading">
           <div>
             <h2 id="status-title">対応状況</h2>
-            <p>現在使える機能、候補表示、準備中の機能を確認できます。</p>
+            <p>現在使える機能と準備中の機能です。</p>
           </div>
-          <p class="status-note">候補表示は、実際の生成位置と異なる場合があります。</p>
+          <p class="status-note">候補表示は実際の生成位置と異なる場合があります。</p>
         </div>
 
         <div class="status-grid" aria-label="機能ごとの対応状況">
+          <div class="status-item"><span>Canvasマップ</span><strong class="status-badge done">対応済み</strong></div>
+          <div class="status-item"><span>ドラッグ移動 / ホイールズーム</span><strong class="status-badge done">対応済み</strong></div>
           <div class="status-item"><span>Java版スライムチャンク</span><strong class="status-badge done">対応済み</strong></div>
           <div class="status-item"><span>統合版スライムチャンク</span><strong class="status-badge candidate">候補表示</strong></div>
           <div class="status-item"><span>Java版構造物候補</span><strong class="status-badge candidate">候補表示</strong></div>
           <div class="status-item"><span>統合版構造物候補</span><strong class="status-badge candidate">候補表示</strong></div>
-          <div class="status-item"><span>要塞候補</span><strong class="status-badge candidate">候補表示</strong></div>
-          <div class="status-item"><span>森の洋館候補</span><strong class="status-badge candidate">候補表示</strong></div>
-          <div class="status-item"><span>ピリジャー前哨基地候補</span><strong class="status-badge candidate">候補表示</strong></div>
-          <div class="status-item"><span>古代都市候補</span><strong class="status-badge candidate">候補表示</strong></div>
-          <div class="status-item"><span>トライアルチャンバー候補</span><strong class="status-badge candidate">候補表示</strong></div>
-          <div class="status-item"><span>簡易地形</span><strong class="status-badge done">対応済み</strong></div>
+          <div class="status-item"><span>疑似バイオーム</span><strong class="status-badge done">対応済み</strong></div>
           <div class="status-item"><span>詳細バイオーム</span><strong class="status-badge preparing">準備中</strong></div>
-          <div class="status-item"><span>ネザー要塞</span><strong class="status-badge unsupported">未対応</strong></div>
-          <div class="status-item"><span>エンドシティ</span><strong class="status-badge unsupported">未対応</strong></div>
+          <div class="status-item"><span>cubiomes WASM</span><strong class="status-badge preparing">未同梱</strong></div>
         </div>
       </section>
 
@@ -213,7 +192,7 @@
         <div class="panel-heading split-heading">
           <div>
             <h2 id="converter-title">ネザー座標変換</h2>
-            <p>オーバーワールドとネザーのX/Z座標を相互変換できます。</p>
+            <p>オーバーワールドとネザーのX/Z座標を相互変換します。</p>
           </div>
           <div id="converter-result" class="converter-result" role="status" aria-live="polite">変換結果: -</div>
         </div>
@@ -238,11 +217,11 @@
         </form>
       </section>
 
-      <section class="panel memo-panel" aria-labelledby="memo-title">
+      <section class="panel memo-panel" aria-labelledby="memo-panel-title">
         <div class="panel-heading split-heading">
           <div>
-            <h2 id="memo-title">地点メモ</h2>
-            <p>見つけた場所をブラウザ内だけに保存し、表示中のマップにマーカーとして表示できます。</p>
+            <h2 id="memo-panel-title">地点メモ / 手動マーカー</h2>
+            <p>見つけた場所をlocalStorageに保存し、Canvas上にマーカーとして表示します。</p>
           </div>
           <button id="clear-memos-button" class="danger-button" type="button">全削除</button>
         </div>
@@ -261,52 +240,37 @@
             <input id="memo-z-input" type="number" inputmode="numeric" step="1" placeholder="0">
           </label>
           <label class="field">
-            <span>カテゴリ</span>
+            <span>種別</span>
             <select id="memo-type-input">
-              <option value="村">村</option>
-              <option value="要塞">要塞</option>
-              <option value="廃ポータル">廃ポータル</option>
-              <option value="海底神殿">海底神殿</option>
-              <option value="森の洋館">森の洋館</option>
-              <option value="ピリジャー前哨基地">ピリジャー前哨基地</option>
-              <option value="古代都市">古代都市</option>
-              <option value="エンドポータル">エンドポータル</option>
-              <option value="ネザー要塞">ネザー要塞</option>
-              <option value="砦の遺跡">砦の遺跡</option>
-              <option value="エンドシティ">エンドシティ</option>
-              <option value="トライアルチャンバー">トライアルチャンバー</option>
-              <option value="スポナー">スポナー</option>
               <option value="その他">その他</option>
             </select>
           </label>
           <label class="field span-2">
-            <span>メモ本文</span>
-            <textarea id="memo-body-input" rows="3" maxlength="400" placeholder="補足を書いてください"></textarea>
+            <span>メモ</span>
+            <textarea id="memo-body-input" rows="3" placeholder="メモを入力"></textarea>
           </label>
           <button class="primary-button" type="submit">地点を登録</button>
         </form>
 
-        <div class="memo-tools" aria-label="地点メモの検索とフィルタ">
+        <div class="memo-tools">
           <label class="field">
             <span>地点名検索</span>
-            <input id="memo-search-input" type="search" autocomplete="off" placeholder="地点名で検索">
+            <input id="memo-search-input" type="search" placeholder="名前で絞り込み">
           </label>
           <label class="field">
             <span>カテゴリ検索</span>
-            <input id="memo-category-search-input" type="search" autocomplete="off" placeholder="例: 村 / 要塞">
+            <input id="memo-category-search-input" type="search" placeholder="村、要塞など">
           </label>
-          <div class="filter-group" id="memo-filter-group" aria-label="カテゴリフィルタ"></div>
         </div>
-
-        <div id="memo-list" class="memo-list" aria-live="polite"></div>
+        <div id="memo-filter-group" class="filter-group" aria-label="構造物カテゴリフィルタ"></div>
+        <div id="memo-list" class="memo-list"></div>
       </section>
     </main>
 
     <footer class="site-footer">
-      <p>このツールは非公式のMinecraft補助ツールです。MinecraftおよびMojang Studiosとは関係ありません。</p>
-      <p>外部API、アクセス解析、自動アップロードは使用していません。</p>
+      <p>このツールは静的HTML/CSS/JavaScriptのみで動作します。正確なMinecraft生成結果やChunkbaseとの完全一致は保証していません。</p>
     </footer>
 
-    <script type="module" src="js/main.js?v=4.0.1"></script>
+    <script type="module" src="js/main.js?v=5.0.0"></script>
   </body>
 </html>

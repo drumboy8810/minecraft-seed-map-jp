@@ -407,11 +407,24 @@ h2 {
 }
 
 .map-scroll {
-  overflow: auto;
+  overflow: hidden;
   max-height: 72vh;
   border: 1px solid #303a2d;
   border-radius: 6px;
   background: #0d120d;
+}
+
+.map-canvas {
+  display: block;
+  width: 100%;
+  height: min(72vh, 720px);
+  min-height: 520px;
+  cursor: grab;
+  touch-action: none;
+}
+
+.map-canvas:active {
+  cursor: grabbing;
 }
 
 .chunk-grid {

@@ -12,6 +12,7 @@ const REGION_X_MULTIPLIER = 341873128712n;
 const REGION_Z_MULTIPLIER = 132897987541n;
 const STRONGHOLD_COUNT = 128;
 const STRONGHOLD_DISTANCE_CHUNKS = 32;
+const CANDIDATE_NOTE = "候補表示のため、実際の生成位置と異なる場合があります。";
 
 export function detectStructures({ seed, edition, centerX, centerZ, radius }) {
   if (edition === "bedrock") {
@@ -22,12 +23,7 @@ export function detectStructures({ seed, edition, centerX, centerZ, radius }) {
   }
 
   return [
-    ...detectStrongholdCandidates({
-      seed,
-      centerX,
-      centerZ,
-      radius,
-    }),
+    ...detectStrongholdCandidates({ seed, centerX, centerZ, radius }),
     ...detectStructureCandidates({
       seed,
       centerX,
@@ -36,7 +32,7 @@ export function detectStructures({ seed, edition, centerX, centerZ, radius }) {
       settings: JAVA_STRUCTURE_SETTINGS.village,
       idPrefix: "village",
       name: "村候補",
-      note: "村は候補表示のため、実際の生成位置と異なる場合があります。",
+      note: `村は${CANDIDATE_NOTE}`,
       edition,
     }),
     ...detectStructureCandidates({
@@ -47,7 +43,7 @@ export function detectStructures({ seed, edition, centerX, centerZ, radius }) {
       settings: JAVA_STRUCTURE_SETTINGS.woodlandMansion,
       idPrefix: "woodland-mansion",
       name: "森の洋館候補",
-      note: "森の洋館は候補表示のため、実際の生成位置と異なる場合があります。",
+      note: `森の洋館は${CANDIDATE_NOTE}`,
       edition,
     }),
     ...detectStructureCandidates({
@@ -58,7 +54,7 @@ export function detectStructures({ seed, edition, centerX, centerZ, radius }) {
       settings: JAVA_STRUCTURE_SETTINGS.pillagerOutpost,
       idPrefix: "pillager-outpost",
       name: "ピリジャー前哨基地候補",
-      note: "ピリジャー前哨基地は候補表示のため、実際の生成位置と異なる場合があります。",
+      note: `ピリジャー前哨基地は${CANDIDATE_NOTE}`,
       edition,
     }),
     ...detectStructureCandidates({
@@ -69,7 +65,7 @@ export function detectStructures({ seed, edition, centerX, centerZ, radius }) {
       settings: JAVA_STRUCTURE_SETTINGS.ancientCity,
       idPrefix: "ancient-city",
       name: "古代都市候補",
-      note: "古代都市は候補表示のため、実際の生成位置と異なる場合があります。",
+      note: `古代都市は${CANDIDATE_NOTE}`,
       edition,
     }),
     ...detectStructureCandidates({
@@ -80,7 +76,7 @@ export function detectStructures({ seed, edition, centerX, centerZ, radius }) {
       settings: JAVA_STRUCTURE_SETTINGS.trialChambers,
       idPrefix: "trial-chambers",
       name: "トライアルチャンバー候補",
-      note: "トライアルチャンバーは候補表示のため、実際の生成位置と異なる場合があります。",
+      note: `トライアルチャンバーは${CANDIDATE_NOTE}`,
       edition,
     }),
     ...detectStructureCandidates({
@@ -91,7 +87,7 @@ export function detectStructures({ seed, edition, centerX, centerZ, radius }) {
       settings: JAVA_STRUCTURE_SETTINGS.oceanMonument,
       idPrefix: "ocean-monument",
       name: "海底神殿候補",
-      note: "海底神殿は候補表示のため、実際の生成位置と異なる場合があります。",
+      note: `海底神殿は${CANDIDATE_NOTE}`,
       edition,
     }),
     ...detectStructureCandidates({
@@ -102,7 +98,7 @@ export function detectStructures({ seed, edition, centerX, centerZ, radius }) {
       settings: JAVA_STRUCTURE_SETTINGS.ruinedPortal,
       idPrefix: "ruined-portal",
       name: "廃ポータル候補",
-      note: "候補表示のため、実際の生成位置と異なる場合があります。",
+      note: `廃ポータルは${CANDIDATE_NOTE}`,
       edition,
     }),
   ];
@@ -114,7 +110,7 @@ export function isStructureAutoDetectionAvailable() {
 
 function detectBedrockStructureCandidates({ seed, centerX, centerZ, radius }) {
   const bedrockSeed = BigInt(seed) ^ 0x5bd1e995n;
-  const note = "統合版の構造物は候補表示のため、実際の生成位置と異なる場合があります。現時点では同一候補ロジックです。";
+  const note = "統合版の構造物は候補表示です。実際の生成位置と異なる場合があります。現時点ではJava版候補ロジックを元にした簡易候補です。";
 
   return [
     ...detectStrongholdCandidates({
@@ -256,7 +252,7 @@ function detectStrongholdCandidates({
   radius,
   idPrefix = "stronghold",
   name = "要塞候補",
-  note = "要塞は候補表示のため、実際の生成位置と異なる場合があります。",
+  note = `要塞は${CANDIDATE_NOTE}`,
   edition = "java",
 }) {
   const centerChunkX = blockToChunk(centerX);

@@ -26,7 +26,11 @@ export function getVisibleStructures({
 export function applyStructureLayer({ grid, structures }) {
   const cells = Array.from(grid.querySelectorAll(".chunk-cell"));
   if (!cells.length) {
-    return;
+    return {
+      totalVisible: 0,
+      autoVisible: 0,
+      manualVisible: 0,
+    };
   }
 
   const structuresByChunk = new Map();
@@ -39,6 +43,10 @@ export function applyStructureLayer({ grid, structures }) {
     structuresByChunk.set(key, markers);
   }
 
+  const renderedMarkerIds = new Set();
+  let autoVisible = 0;
+  let manualVisible = 0;
+
   for (const cell of cells) {
     const key = `${cell.dataset.x},${cell.dataset.z}`;
     const markers = structuresByChunk.get(key) || [];
@@ -46,6 +54,17 @@ export function applyStructureLayer({ grid, structures }) {
     cell.classList.toggle("has-auto-marker", markers.some((marker) => marker.source === STRUCTURE_SOURCES.AUTO));
     cell.dataset.markerIds = markers.map((marker) => marker.id).join(",");
     if (markers.length) {
+      for (const marker of markers) {
+        if (renderedMarkerIds.has(marker.id)) {
+          continue;
+        }
+        renderedMarkerIds.add(marker.id);
+        if (marker.source === STRUCTURE_SOURCES.AUTO) {
+          autoVisible += 1;
+        } else {
+          manualVisible += 1;
+        }
+      }
       cell.style.setProperty("--marker-color", getCategoryColor(markers[0].type));
       cell.setAttribute("aria-label", `${cell.dataset.baseLabel}、構造物 ${markers.length}件`);
       cell.title = markers
@@ -57,6 +76,12 @@ export function applyStructureLayer({ grid, structures }) {
       cell.removeAttribute("title");
     }
   }
+
+  return {
+    totalVisible: renderedMarkerIds.size,
+    autoVisible,
+    manualVisible,
+  };
 }
 
 export function getSourceLabel(source) {

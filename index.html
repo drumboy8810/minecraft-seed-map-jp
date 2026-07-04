@@ -102,8 +102,8 @@
           <label class="terrain-mode field">
             <span>地形モード</span>
             <select id="terrain-mode-select">
-              <option value="simple" selected>簡易地形</option>
-              <option value="cubiomes">詳細バイオーム：準備中</option>
+              <option value="simple" selected>簡易地形：利用可能</option>
+              <option value="cubiomes">詳細バイオーム：準備中 / WASM未配置</option>
             </select>
           </label>
           <p id="terrain-mode-status" class="layer-note">現在の地形モード: 簡易地形</p>
@@ -125,13 +125,16 @@
               <span><i class="legend-chip slime"></i>スライム</span>
               <span><i class="legend-chip normal"></i>通常</span>
               <span><i class="legend-chip center"></i>中心付近</span>
-              <span><i class="legend-chip structure"></i>構造物</span>
+              <span><i class="legend-chip structure"></i>手動マーカー</span>
               <span><i class="legend-chip auto-structure"></i>自動候補</span>
               <span><i class="legend-chip stronghold"></i>要塞候補</span>
               <span><i class="legend-chip candidate"></i>候補表示</span>
             </div>
           </div>
 
+          <div id="structure-candidate-status" class="structure-candidate-status" role="status" aria-live="polite">
+            構造物候補: 未生成
+          </div>
           <p class="layer-note">スライムチャンク、構造物候補、手動マーカー、簡易地形を個別レイヤーとして表示します。候補表示は実際の生成位置と異なる場合があります。</p>
           <p class="layer-note is-warning">詳細バイオームは準備中です。cubiomes WASM未配置でもアプリは通常どおり動作します。</p>
           <div id="terrain-legend" class="terrain-legend" aria-label="簡易地形色分けの凡例"></div>
@@ -298,6 +301,6 @@
       <p>外部API、アクセス解析、自動アップロードは使用していません。</p>
     </footer>
 
-    <script type="module" src="js/main.js?v=3.0.1"></script>
+    <script type="module" src="js/main.js?v=3.1.0"></script>
   </body>
 </html>

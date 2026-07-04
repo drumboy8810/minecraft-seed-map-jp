@@ -8,14 +8,16 @@ const CUBIOMES_WASM_PATH = "assets/wasm/cubiomes.wasm";
 
 let status = WASM_STATUS.NOT_CONFIGURED;
 let moduleInstance = null;
+let lastMessage = getUnavailableMessage();
 
 export async function load() {
   status = WASM_STATUS.MISSING;
   moduleInstance = null;
+  lastMessage = getUnavailableMessage();
   return {
     ok: false,
     status,
-    message: getUnavailableMessage(),
+    message: lastMessage,
   };
 }
 
@@ -23,12 +25,38 @@ export function isAvailable() {
   return status === WASM_STATUS.LOADED && moduleInstance !== null;
 }
 
-export function getBiomeAt() {
-  throw new Error(getUnavailableMessage());
+export function getBiomeAt(seed, version, x, y, z) {
+  if (!isAvailable()) {
+    return {
+      ok: false,
+      biome: null,
+      seed,
+      version,
+      x,
+      y,
+      z,
+      message: getUnavailableMessage(),
+    };
+  }
+
+  return moduleInstance.getBiomeAt(seed, version, x, y, z);
 }
 
-export function generateArea() {
-  throw new Error(getUnavailableMessage());
+export function generateArea(seed, version, centerX, centerZ, radius) {
+  if (!isAvailable()) {
+    return {
+      ok: false,
+      biomes: [],
+      seed,
+      version,
+      centerX,
+      centerZ,
+      radius,
+      message: getUnavailableMessage(),
+    };
+  }
+
+  return moduleInstance.generateArea(seed, version, centerX, centerZ, radius);
 }
 
 export function getStatus() {
@@ -36,7 +64,7 @@ export function getStatus() {
     status,
     wasmPath: CUBIOMES_WASM_PATH,
     isAvailable: isAvailable(),
-    message: getUnavailableMessage(),
+    message: lastMessage,
   };
 }
 

@@ -1,4 +1,19 @@
-# Minecraft Seed Map JP v3.0
+# Minecraft Seed Map JP v3.1
+
+## v3.1 構造物候補のマップ反映改善と詳細バイオームPoC準備
+
+v3.1では、構造物候補レイヤーの表示状態を確認しやすくし、将来のcubiomes WASM詳細バイオーム対応に向けたPoC入口を整理しました。
+
+- 構造物候補の検出件数、表示中の自動候補件数、手動マーカー件数をマップ上に表示
+- 表示範囲内に候補がない場合は「表示範囲内に候補がありません」と表示
+- レイヤーON/OFF、カテゴリフィルタ、エディション切替、バージョン切替後に構造物候補を再描画
+- 自動候補と手動マーカーの凡例表記を整理
+- 詳細バイオームPoC用に `js/biome/cubiomes-provider.js` の `load()` / `isAvailable()` / `getBiomeAt(seed, version, x, y, z)` / `generateArea(seed, version, centerX, centerZ, radius)` を整備
+- cubiomes本体やWASMはまだ同梱していません
+- 詳細バイオームはWASM未配置のため準備中です
+- 外部通信なしで動作します
+
+構造物候補は候補表示です。実際の生成位置、バイオーム成立判定、生成失敗条件とは異なる場合があります。
 
 ## v3.0 Seed Map UI・統合版候補表示・レイヤー整理
 

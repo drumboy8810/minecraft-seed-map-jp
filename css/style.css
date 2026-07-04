@@ -354,6 +354,24 @@ h2 {
   background: transparent;
 }
 
+.structure-candidate-status {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  margin: 0 0 12px;
+  padding: 7px 10px;
+  border: 1px solid #56634f;
+  border-radius: 6px;
+  background: var(--surface-3);
+  color: var(--accent-strong);
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.structure-candidate-status.is-empty {
+  color: var(--warning);
+}
+
 .layer-toggle {
   display: inline-flex;
   align-items: center;
